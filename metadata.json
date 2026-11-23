@@ -1,0 +1,6 @@
+{
+  "name": "GeminIsland — Réseaux & Cloud",
+  "description": "Cours interactif et gamifié d'introduction aux réseaux informatiques et au Cloud Computing sur l'archipel de GeminIsland : 5 îles jouables, simulateur de paquets animé, storyboards vidéo et quiz adaptatifs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
