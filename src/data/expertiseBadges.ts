@@ -9,6 +9,8 @@ export interface ExpertiseBadge {
   minXp: number;
   minPassedExams: number;
   minExamScore: number | null;
+  minSpeedruns?: number;
+  minNeutralizedAttacks?: number;
   iconKey: 'compass' | 'zap' | 'shield' | 'cloud' | 'radar' | 'crown';
 }
 
@@ -17,6 +19,7 @@ export interface EvaluatedExpertiseBadge extends ExpertiseBadge {
   xpMet: boolean;
   examsMet: boolean;
   scoreMet: boolean;
+  extraMet: boolean;
   xpProgressPct: number;
   overallProgressPct: number;
 }
@@ -45,6 +48,32 @@ export const EXPERTISE_BADGES: ExpertiseBadge[] = [
     minPassedExams: 1,
     minExamScore: 10,
     iconKey: 'zap',
+  },
+  {
+    id: 'medal-speedrun-flash',
+    title: 'Éclair Speedrun',
+    tierLabel: 'Médaille Argent',
+    tier: 'silver',
+    description:
+      'Réactivité exceptionnelle sous pression : au moins 1 circuit Speedrun validé avec multiplicateur d’XP.',
+    minXp: 600,
+    minPassedExams: 0,
+    minExamScore: null,
+    minSpeedruns: 1,
+    iconKey: 'zap',
+  },
+  {
+    id: 'medal-threat-hunter',
+    title: 'Chasseur de Menaces',
+    tierLabel: 'Médaille Or',
+    tier: 'gold',
+    description:
+      'Neutralisation en temps réel d’au moins 3 cyberattaques majeures (XSS, MitM, Ransomware, SQLi, DDoS…).',
+    minXp: 1100,
+    minPassedExams: 0,
+    minExamScore: null,
+    minNeutralizedAttacks: 3,
+    iconKey: 'shield',
   },
   {
     id: 'medal-cyber-sentinel',
@@ -99,7 +128,9 @@ export const EXPERTISE_BADGES: ExpertiseBadge[] = [
 export function evaluateExpertiseBadges(
   totalXp: number,
   passedExamsCount: number,
-  bestExamScore: number | null
+  bestExamScore: number | null,
+  speedrunsCompleted = 0,
+  neutralizedAttacksCount = 0
 ): EvaluatedExpertiseBadge[] {
   const safeScore = bestExamScore ?? 0;
 
@@ -107,7 +138,11 @@ export function evaluateExpertiseBadges(
     const xpMet = totalXp >= badge.minXp;
     const examsMet = passedExamsCount >= badge.minPassedExams;
     const scoreMet = badge.minExamScore === null || safeScore >= badge.minExamScore;
-    const unlocked = xpMet && examsMet && scoreMet;
+    const speedrunMet = !badge.minSpeedruns || speedrunsCompleted >= badge.minSpeedruns;
+    const attacksMet =
+      !badge.minNeutralizedAttacks || neutralizedAttacksCount >= badge.minNeutralizedAttacks;
+    const extraMet = speedrunMet && attacksMet;
+    const unlocked = xpMet && examsMet && scoreMet && extraMet;
 
     const xpProgressPct = Math.min(100, Math.round((totalXp / badge.minXp) * 100));
 
@@ -117,6 +152,14 @@ export function evaluateExpertiseBadges(
     }
     if (badge.minExamScore !== null) {
       parts.push(Math.min(100, Math.round((safeScore / badge.minExamScore) * 100)));
+    }
+    if (badge.minSpeedruns) {
+      parts.push(Math.min(100, Math.round((speedrunsCompleted / badge.minSpeedruns) * 100)));
+    }
+    if (badge.minNeutralizedAttacks) {
+      parts.push(
+        Math.min(100, Math.round((neutralizedAttacksCount / badge.minNeutralizedAttacks) * 100))
+      );
     }
     const overallProgressPct = Math.round(
       parts.reduce((acc, val) => acc + val, 0) / parts.length
@@ -128,6 +171,7 @@ export function evaluateExpertiseBadges(
       xpMet,
       examsMet,
       scoreMet,
+      extraMet,
       xpProgressPct,
       overallProgressPct,
     };
@@ -137,9 +181,17 @@ export function evaluateExpertiseBadges(
 export function getHighestUnlockedBadge(
   totalXp: number,
   passedExamsCount: number,
-  bestExamScore: number | null
+  bestExamScore: number | null,
+  speedrunsCompleted = 0,
+  neutralizedAttacksCount = 0
 ): EvaluatedExpertiseBadge | null {
-  const evaluated = evaluateExpertiseBadges(totalXp, passedExamsCount, bestExamScore);
+  const evaluated = evaluateExpertiseBadges(
+    totalXp,
+    passedExamsCount,
+    bestExamScore,
+    speedrunsCompleted,
+    neutralizedAttacksCount
+  );
   const unlocked = evaluated.filter((b) => b.unlocked);
   return unlocked.length > 0 ? unlocked[unlocked.length - 1] : null;
 }

@@ -231,7 +231,7 @@ export const ExamBlancPanel: React.FC<ExamBlancPanelProps> = ({
             Examen Blanc Cyberland
           </h2>
           <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-            Testez votre maîtrise globale des 18 îles (réseaux, OSI, Active Directory, SOC/SIEM,
+            Testez votre maîtrise globale des {ISLANDS.length} îles (réseaux, serveurs, pare-feux, Active Directory, SOC/SIEM,
             Kubernetes, VPN, Wireshark et Azure Monitor). À l&apos;issue de l&apos;épreuve, obtenez
             votre Radar de Compétences sur 5 domaines et les îles précises à réviser.
           </p>
@@ -293,7 +293,7 @@ export const ExamBlancPanel: React.FC<ExamBlancPanelProps> = ({
               {format === '20q' ? '20 épreuves' : '10 épreuves'}
             </p>
             <p className="text-slate-600 dark:text-slate-400">
-              {format === '20q' ? 'Couverture complète 18 îles' : 'Entraînement rapide ciblé'}
+              {format === '20q' ? `Couverture complète ${ISLANDS.length} îles` : 'Entraînement rapide ciblé'}
             </p>
           </div>
           <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 space-y-1">

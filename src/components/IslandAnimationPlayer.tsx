@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { Play, Pause, SkipBack, SkipForward, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { EASE_SWISS } from './MotionPrimitives';
 import { playClick, playPacket } from '../utils/sound';
 
 interface IslandAnimationPlayerProps {
@@ -23,9 +25,9 @@ const SCENES_BY_ISLAND: Record<number, AnimationScene[]> = {
       conceptNote: 'Problème : un fichier volumineux saturerait une ligne entière.',
     },
     {
-      title: '2. GemiBot découpe en 4 paquets',
+      title: '2. Découpage en 4 paquets',
       caption:
-        'GemiBot découpe la lettre en 4 morceaux numérotés (1/4, 2/4, 3/4, 4/4), chacun portant son adresse de destination.',
+        'Le protocole réseau découpe la lettre en 4 morceaux numérotés (1/4, 2/4, 3/4, 4/4), chacun portant son adresse de destination.',
       conceptNote: 'Concept : découpage en paquets (Packet Switching).',
     },
     {
@@ -555,6 +557,146 @@ const SCENES_BY_ISLAND: Record<number, AnimationScene[]> = {
       conceptNote: 'Sur un Wi-Fi d’hôtel ou d’aéroport, privilégiez toujours le Full Tunnel.',
     },
   ],
+  19: [
+    {
+      title: '1. Créer un serveur : Physique vs VPS / VM Cloud & OS LTS',
+      caption:
+        'Pour créer un serveur, on provisionne une machine physique ou une VM/VPS dans le Cloud (vCPU, RAM, SSD NVMe, IP publique fixe) et on installe un OS serveur stable comme Ubuntu Server 24.04 LTS ou Debian sans interface graphique inutile.',
+      conceptNote: 'LTS (Long Term Support) garantit 5 ans de mises à jour de sécurité critiques.',
+    },
+    {
+      title: '2. Premier démarrage : Mises à jour, compte sudo & Durcissement SSH',
+      caption:
+        'Dès la création, on met à jour le système (apt update && upgrade), on crée un utilisateur non-root avec sudo, on déploie une clé SSH Ed25519 et on désactive la connexion root et par mot de passe.',
+      conceptNote: 'Ne laissez jamais root + mot de passe ouverts sur le port 22 !',
+    },
+    {
+      title: '3. Configurer le service Web : Reverse Proxy Nginx + HTTPS TLS',
+      caption:
+        'Votre application écoute uniquement en local (127.0.0.1:3000) gérée par systemd. Devant elle, Nginx joue le rôle de Reverse Proxy sur le port 443 avec un certificat TLS Let’s Encrypt automatique.',
+      conceptNote: 'Nginx gère le chiffrement HTTPS, la compression et isole votre code applicatif.',
+    },
+    {
+      title: '4. Où placer le Pare-feu ? Architecture DMZ & Double Cloison',
+      caption:
+        'On place un premier pare-feu périmétrique (FW1) entre Internet et le serveur Web en zone DMZ, puis un second pare-feu interne (FW2) entre la DMZ et la base de données sur le réseau privé.',
+      conceptNote: 'Même si le serveur Web est compromis, la base de données reste isolée derrière FW2.',
+    },
+    {
+      title: '5. Configurer les règles Pare-feu (UFW / nftables) : Tout bloquer par défaut',
+      caption:
+        'On applique la politique « ufw default deny incoming », puis on ouvre uniquement 443/tcp (HTTPS public), 80/tcp (redirection) et 22/tcp restreint à votre IP fixe ou VPN. Les ports 5432 et 23 sont bloqués.',
+      conceptNote: 'Règle d’or : autorisez SSH AVANT d’exécuter « ufw enable ».',
+    },
+    {
+      title: '6. Production durable : Fail2ban, Logs & Sauvegardes chiffrées',
+      caption:
+        'Pour garder un serveur fiable 24/7, on ajoute Fail2ban (bannit automatiquement les IP qui tentent de forcer SSH), les mises à jour automatiques de sécurité et des sauvegardes externes chiffrées (règle 3-2-1).',
+      conceptNote: 'Un bon serveur est durci, filtré, supervisé et toujours restaurable.',
+    },
+  ],
+  20: [
+    {
+      title: '1. Switch L2 & Limite du réseau plat (Domaine de diffusion)',
+      caption:
+        'Sans segmentation, tous les postes (Direction, Employés, Invités, Serveurs) partagent un seul domaine de broadcast : une infection ou un scan ARP depuis le Wi-Fi visiteurs atteint immédiatement les serveurs critiques.',
+      conceptNote: 'Un réseau plat = zéro cloisonnement en cas de compromission.',
+    },
+    {
+      title: '2. Découpage logique en VLANs (Virtual LAN)',
+      caption:
+        'Sur un même switch administrable, on crée des réseaux virtuels indépendants : VLAN 10 (Direction), VLAN 20 (Employés), VLAN 30 (Invités) et VLAN 99 (Serveurs). Les ports des postes sont configurés en mode Access.',
+      conceptNote: 'Un port Access appartient à un seul VLAN (trames non étiquetées côté PC).',
+    },
+    {
+      title: '3. Étiquetage IEEE 802.1Q & Lien Trunk multi-VLAN',
+      caption:
+        'Pour transporter les 4 VLANs sur un seul câble fibre/RJ45 vers le routeur cœur ou un second switch, on active un port Trunk qui insère une étiquette 802.1Q (4 octets avec le VLAN ID) dans chaque trame Ethernet.',
+      conceptNote: 'Port Trunk = autoroute multi-VLAN avec étiquettes 802.1Q.',
+    },
+    {
+      title: '4. Routage Inter-VLAN & Contrôle par ACL',
+      caption:
+        'Pour faire communiquer deux VLANs autorisés (ex. Employés → Serveur ERP), les paquets montent au routeur L3 (Router-on-a-Stick) qui applique des ACL strictes et bloque Invités → Serveurs.',
+      conceptNote: 'Le routage Inter-VLAN rétablit uniquement les flux métier légitimes.',
+    },
+    {
+      title: '5. Wi-Fi Entreprise : WPA3-Enterprise (802.1X / RADIUS)',
+      caption:
+        'Sur la borne Wi-Fi, le SSID Corporate utilise WPA3-Enterprise : chaque salarié s’authentifie via son compte ou certificat vérifié par le serveur RADIUS. Aucun mot de passe partagé à changer lors d’un départ.',
+      conceptNote: '802.1X/RADIUS garantit l’identité individuelle et la révocation instantanée.',
+    },
+    {
+      title: '6. Wi-Fi Visiteurs isolé (VLAN 30) & Client Isolation',
+      caption:
+        'Le second SSID « Cyberland-Guest » bascule automatiquement les visiteurs dans le VLAN 30 avec Client Isolation (les téléphones ne peuvent pas se voir entre eux) et accès Internet uniquement.',
+      conceptNote: 'Segmentation L2 + WPA3 + ACL = campus moderne prêt pour la production.',
+    },
+  ],
+  21: [
+    {
+      title: '1. Pénurie IPv4 (32 bits) vs Abondance IPv6 (128 bits)',
+      caption:
+        'IPv4 n’offre que 4,3 milliards d’adresses publiques, obligeant à empiler du NAT. IPv6 passe sur 128 bits : 340 sextillions d’adresses (3,4 × 10³⁸), soit assez pour donner une adresse unique à chaque appareil sur Terre.',
+      conceptNote: 'IPv6 supprime le besoin de NAT et redonne une connectivité de bout en bout.',
+    },
+    {
+      title: '2. Anatomie & Règles de compression RFC 5952',
+      caption:
+        'Une adresse IPv6 se lit en 8 blocs de 4 chiffres hexadécimaux séparés par « : ». On supprime les zéros en tête de chaque bloc et on remplace UNE seule fois la plus longue suite de blocs à zéro par « :: ».',
+      conceptNote: 'Jamais deux « :: » dans la même adresse, sinon le routeur ne sait plus combien de zéros restaurer.',
+    },
+    {
+      title: '3. Familles de préfixes : ::1, fe80::, fc00:: et 2000::',
+      caption:
+        'Chaque préfixe a un rôle précis : ::1 est la boucle locale (loopback), fe80::/10 ne sort jamais du LAN (Link-Local), fc00::/7 correspond aux réseaux privés (ULA) et 2000::/3 aux adresses publiques routables sur Internet.',
+      conceptNote: 'Un même poste possède souvent simultanément une fe80:: (LAN) et une 2001:... (Internet).',
+    },
+    {
+      title: '4. Auto-configuration sans serveur : SLAAC & NDP',
+      caption:
+        'Avec IPv6, ARP disparaît au profit de NDP (ICMPv6). Le poste envoie un Router Solicitation (RS), le routeur répond par un Router Advertisement (RA) avec le préfixe /64, et l’appareil génère seul son identifiant d’interface.',
+      conceptNote: 'SLAAC permet le branchement réseau instantané sans même déployer de serveur DHCPv6.',
+    },
+    {
+      title: '5. Transition en douceur : Dual-Stack, DNS AAAA & Happy Eyeballs',
+      caption:
+        'On ne coupe pas IPv4 du jour au lendemain : les serveurs tournent en Dual-Stack (IPv4 + IPv6) et publient des enregistrements DNS A et AAAA. Les navigateurs tentent IPv6 en priorité avec bascule rapide (Happy Eyeballs).',
+      conceptNote: 'Pensez toujours à dupliquer vos règles de pare-feu sur IPv6 (ip6tables/nftables) !',
+    },
+  ],
+  22: [
+    {
+      title: '1. Passerelle API (API Gateway) & Surface d’attaque moderne',
+      caption:
+        'Les applications mobiles et SPA parlent directement à des API JSON (/api/v1/orders). La passerelle API centralise TLS, l’authentification, les quotas (Rate Limiting) et le filtrage avant d’atteindre les microservices.',
+      conceptNote: 'Cacher une URL d’API ne protège rien : chaque endpoint doit vérifier identité ET droits.',
+    },
+    {
+      title: '2. OAuth 2.0 : Authorization Code Flow + PKCE',
+      caption:
+        'Pour déléguer l’accès sans jamais partager le mot de passe au client, l’app génère un code_verifier secret, envoie son hash (code_challenge), reçoit un code temporaire puis l’échange contre un jeton d’accès sécurisé.',
+      conceptNote: 'PKCE empêche le vol du code d’autorisation par une application malveillante sur mobile ou SPA.',
+    },
+    {
+      title: '3. Anatomie d’un JWT : Header · Payload · Signature',
+      caption:
+        'Un JSON Web Token comprend 3 parties Base64Url : l’en-tête (algorithme RS256), le payload lisible par tous (sub, role, exp) et la signature cryptographique vérifiée via la clé publique JWKS du serveur d’identité.',
+      conceptNote: 'Un JWT est signé contre la falsification, mais NON chiffré : n’y mettez jamais de secret !',
+    },
+    {
+      title: '4. Pièges JWT : alg:none, durée courte & Refresh Token',
+      caption:
+        'Un attaquant tente de modifier role:"admin" et de passer alg:"none" pour retirer la signature. Le backend doit imposer une liste blanche stricte d’algorithmes (RS256/ES256) et utiliser des Access Tokens courts (15 min) + Refresh Tokens rotatifs.',
+      conceptNote: 'Toujours vérifier signature, algorithme attendu, émetteur (iss), audience (aud) et expiration (exp).',
+    },
+    {
+      title: '5. Défense OWASP API Top 10 : IDOR / BOLA & Rate Limiting',
+      caption:
+        'Changer /factures/1042 en /factures/1043 pour lire le dossier d’un autre client est la faille #1 (BOLA/IDOR). Le serveur doit contrôler req.user.id === facture.ownerId, utiliser des UUID et limiter le débit par client.',
+      conceptNote: 'Authentification (qui êtes-vous ?) ≠ Autorisation (avez-vous le droit sur CET objet ?).',
+    },
+  ],
 };
 
 const PIZZA_LAYERS = [
@@ -682,7 +824,16 @@ export const IslandAnimationPlayer: React.FC<IslandAnimationPlayerProps> = ({
         </div>
 
         {/* Interactive Visual Stage */}
-        <div className="p-6 bg-[#F4F8FC] dark:bg-slate-800/70 min-h-[340px] flex flex-col justify-center">
+        <div className="p-6 bg-[#F4F8FC] dark:bg-slate-800/70 min-h-[340px] flex flex-col justify-center overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`${islandId}-${step}`}
+              initial={{ opacity: 0, x: 14, scale: 0.99 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: -10, scale: 0.99 }}
+              transition={{ duration: 0.22, ease: EASE_SWISS }}
+              className="w-full"
+            >
           {islandId === 1 && <Island1Visual step={step} />}
           {islandId === 2 && <Island2Visual step={step} />}
           {islandId === 3 && <Island3Visual step={step} />}
@@ -721,6 +872,12 @@ export const IslandAnimationPlayer: React.FC<IslandAnimationPlayerProps> = ({
           {islandId === 16 && <Island16Visual step={step} />}
           {islandId === 17 && <Island17Visual step={step} />}
           {islandId === 18 && <Island18Visual step={step} />}
+          {islandId === 19 && <Island19Visual step={step} />}
+          {islandId === 20 && <Island20Visual step={step} />}
+          {islandId === 21 && <Island21Visual step={step} />}
+          {islandId === 22 && <Island22Visual step={step} />}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {/* Playback Controls Bar */}
@@ -3565,6 +3722,920 @@ const Island18Visual: React.FC<{ step: number }> = ({ step }) => {
     </svg>
   );
 };
+
+const Island19Visual: React.FC<{ step: number }> = ({ step }) => {
+  const [pulse, setPulse] = useState(0);
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setPulse((p) => (p + 1) % 24);
+    }, 150);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const progress = pulse / 23;
+
+  return (
+    <svg
+      viewBox="0 0 640 250"
+      className="w-full max-w-2xl mx-auto"
+      role="img"
+      aria-label="Animation création serveur, configuration SSH/Nginx et placement pare-feu DMZ"
+    >
+      <rect x="8" y="8" width="624" height="234" rx="14" fill="#FFFFFF" stroke="#CBD5E1" strokeWidth="1.5" />
+
+      {step === 0 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 1 · Provisioning du Serveur (VPS / VM Cloud) &amp; OS Linux LTS
+          </text>
+          <rect x="34" y="54" width="250" height="162" rx="12" fill="#F8FAFC" stroke="#0284C7" strokeWidth="2" />
+          <text x="159" y="80" textAnchor="middle" className="fill-sky-900 text-[12px] font-bold">
+            Ressources Allouées
+          </text>
+          <text x="54" y="108" className="fill-slate-700 text-[11px] font-mono">• CPU : 4 vCPU dédiés</text>
+          <text x="54" y="132" className="fill-slate-700 text-[11px] font-mono">• RAM : 8 Go ECC</text>
+          <text x="54" y="156" className="fill-slate-700 text-[11px] font-mono">• Disque : 80 Go SSD NVMe</text>
+          <text x="54" y="180" className="fill-emerald-700 text-[11px] font-mono font-bold">• IP fixe : 203.0.113.42</text>
+
+          <rect x="318" y="54" width="288" height="162" rx="12" fill="#0F172A" stroke="#38BDF8" strokeWidth="2" />
+          <text x="462" y="80" textAnchor="middle" className="fill-sky-300 text-[12px] font-bold">
+            Installation Ubuntu Server 24.04 LTS
+          </text>
+          <text x="338" y="110" className="fill-emerald-400 text-[10.5px] font-mono">$ hostnamectl set-hostname srv-prod-01</text>
+          <text x="338" y="134" className="fill-slate-300 text-[10.5px] font-mono">$ apt update &amp;&amp; apt upgrade -y</text>
+          <rect x="338" y="154" width="248" height="12" rx="6" fill="#1E293B" />
+          <rect x="338" y="154" width={Math.max(24, progress * 248)} height="12" rx="6" fill="#10B981" />
+          <text x="462" y="192" textAnchor="middle" className="fill-emerald-300 text-[10.5px] font-mono font-bold">
+            Serveur prêt · Support sécurité 5 ans
+          </text>
+        </>
+      )}
+
+      {step === 1 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 2 · Durcissement SSH (/etc/ssh/sshd_config)
+          </text>
+          <rect x="34" y="56" width="268" height="160" rx="12" fill="#FFF1F2" stroke="#E11D48" strokeWidth="2" />
+          <text x="168" y="82" textAnchor="middle" className="fill-rose-900 text-[12px] font-bold">
+            Avant (Serveur exposé)
+          </text>
+          <text x="52" y="114" className="fill-rose-800 text-[11px] font-mono">PermitRootLogin yes</text>
+          <text x="52" y="140" className="fill-rose-800 text-[11px] font-mono">PasswordAuthentication yes</text>
+          <text x="52" y="176" className="fill-rose-700 text-[10.5px] font-semibold">
+            Cible immédiate des bots force brute SSH !
+          </text>
+
+          <rect x="338" y="56" width="268" height="160" rx="12" fill="#ECFDF5" stroke="#059669" strokeWidth="2.5" />
+          <text x="472" y="82" textAnchor="middle" className="fill-emerald-950 text-[12px] font-bold">
+            Après (Serveur durci)
+          </text>
+          <text x="356" y="112" className="fill-emerald-900 text-[11px] font-mono">adduser adminops &amp;&amp; sudo</text>
+          <text x="356" y="136" className="fill-emerald-900 text-[11px] font-mono">PermitRootLogin no</text>
+          <text x="356" y="160" className="fill-emerald-900 text-[11px] font-mono">PasswordAuthentication no</text>
+          <text x="356" y="188" className="fill-emerald-800 text-[10.5px] font-bold">
+            Clé cryptographique Ed25519 obligatoire
+          </text>
+        </>
+      )}
+
+      {step === 2 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 3 · Configuration Web : Reverse Proxy Nginx + HTTPS TLS
+          </text>
+          <rect x="28" y="84" width="136" height="92" rx="12" fill="#F0F9FF" stroke="#0284C7" strokeWidth="2" />
+          <text x="96" y="116" textAnchor="middle" className="fill-sky-900 text-[11.5px] font-bold">Visiteur Web</text>
+          <text x="96" y="140" textAnchor="middle" className="fill-slate-600 text-[10px] font-mono">HTTPS :443</text>
+
+          <rect x="236" y="66" width="168" height="128" rx="12" fill="#ECFDF5" stroke="#059669" strokeWidth="2.5" />
+          <text x="320" y="94" textAnchor="middle" className="fill-emerald-950 text-[12px] font-bold">Nginx Reverse Proxy</text>
+          <text x="320" y="118" textAnchor="middle" className="fill-emerald-800 text-[10px] font-mono">TLS 1.3 Let&apos;s Encrypt</text>
+          <text x="320" y="142" textAnchor="middle" className="fill-emerald-800 text-[10px] font-mono">proxy_pass 127.0.0.1:3000</text>
+          <text x="320" y="168" textAnchor="middle" className="fill-emerald-700 text-[10px] font-bold">systemctl enable nginx</text>
+
+          <rect x="476" y="84" width="136" height="92" rx="12" fill="#0F172A" stroke="#6366F1" strokeWidth="2" />
+          <text x="544" y="116" textAnchor="middle" className="fill-white text-[11.5px] font-bold">App Interne</text>
+          <text x="544" y="140" textAnchor="middle" className="fill-indigo-300 text-[10px] font-mono">127.0.0.1:3000</text>
+          <text x="544" y="158" textAnchor="middle" className="fill-slate-400 text-[9.5px]">Non exposée WAN</text>
+
+          <line x1="164" y1="130" x2="236" y2="130" stroke="#059669" strokeWidth="2.5" />
+          <line x1="404" y1="130" x2="476" y2="130" stroke="#6366F1" strokeWidth="2.5" strokeDasharray="5 3" />
+          <circle cx={164 + progress * 72} cy="130" r="5" fill="#059669" />
+          <circle cx={404 + progress * 72} cy="130" r="5" fill="#6366F1" />
+        </>
+      )}
+
+      {step === 3 && (
+        <>
+          <text x="320" y="26" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 4 · Où placer le Pare-feu ? Architecture DMZ &amp; Défense en Profondeur
+          </text>
+          <rect x="18" y="74" width="90" height="106" rx="10" fill="#FFF1F2" stroke="#E11D48" strokeWidth="2" />
+          <text x="63" y="118" textAnchor="middle" className="fill-rose-900 text-[11px] font-bold">Internet</text>
+          <text x="63" y="138" textAnchor="middle" className="fill-rose-700 text-[9.5px]">WAN public</text>
+
+          <rect x="132" y="62" width="102" height="130" rx="10" fill="#EEF2FF" stroke="#4F46E5" strokeWidth="2.5" />
+          <text x="183" y="96" textAnchor="middle" className="fill-indigo-950 text-[11px] font-bold">Pare-feu 1</text>
+          <text x="183" y="114" textAnchor="middle" className="fill-indigo-700 text-[9.5px] font-mono">Périmétrique</text>
+          <text x="183" y="142" textAnchor="middle" className="fill-emerald-700 text-[9.5px] font-mono font-bold">OK :443</text>
+          <text x="183" y="160" textAnchor="middle" className="fill-rose-600 text-[9.5px] font-mono font-bold">DROP :5432</text>
+
+          <rect x="258" y="62" width="114" height="130" rx="10" fill="#FEF3C7" stroke="#D97706" strokeWidth="2" />
+          <text x="315" y="94" textAnchor="middle" className="fill-amber-950 text-[11px] font-bold">Zone DMZ</text>
+          <text x="315" y="118" textAnchor="middle" className="fill-amber-900 text-[10px]">Serveur Web</text>
+          <text x="315" y="136" textAnchor="middle" className="fill-amber-800 text-[9.5px] font-mono">Nginx + App</text>
+
+          <rect x="396" y="62" width="102" height="130" rx="10" fill="#EEF2FF" stroke="#4F46E5" strokeWidth="2.5" />
+          <text x="447" y="96" textAnchor="middle" className="fill-indigo-950 text-[11px] font-bold">Pare-feu 2</text>
+          <text x="447" y="114" textAnchor="middle" className="fill-indigo-700 text-[9.5px] font-mono">Interne</text>
+          <text x="447" y="142" textAnchor="middle" className="fill-emerald-700 text-[9.5px] font-mono font-bold">DMZ→DB :5432</text>
+          <text x="447" y="160" textAnchor="middle" className="fill-rose-600 text-[9.5px] font-mono font-bold">Reste DROP</text>
+
+          <rect x="522" y="74" width="100" height="106" rx="10" fill="#ECFDF5" stroke="#059669" strokeWidth="2.5" />
+          <text x="572" y="114" textAnchor="middle" className="fill-emerald-950 text-[11px] font-bold">LAN Privé</text>
+          <text x="572" y="134" textAnchor="middle" className="fill-emerald-800 text-[9.5px] font-mono">Base SQL</text>
+          <text x="572" y="152" textAnchor="middle" className="fill-emerald-700 text-[9px]">Isolée WAN</text>
+
+          <line x1="108" y1="127" x2="132" y2="127" stroke="#059669" strokeWidth="2" />
+          <line x1="234" y1="127" x2="258" y2="127" stroke="#059669" strokeWidth="2" />
+          <line x1="372" y1="127" x2="396" y2="127" stroke="#059669" strokeWidth="2" />
+          <line x1="498" y1="127" x2="522" y2="127" stroke="#059669" strokeWidth="2" />
+          <circle cx={108 + progress * 414} cy="127" r="4.5" fill="#10B981" />
+
+          <text x="320" y="218" textAnchor="middle" className="fill-slate-600 text-[10.5px] font-semibold">
+            Double protection : FW1 filtre Internet ; FW2 protège la base de données si la DMZ est attaquée.
+          </text>
+        </>
+      )}
+
+      {step === 4 && (
+        <>
+          <text x="320" y="26" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 5 · Règles UFW : Politique « Tout bloquer par défaut »
+          </text>
+          <rect x="30" y="48" width="580" height="176" rx="12" fill="#0F172A" stroke="#334155" strokeWidth="2" />
+          <text x="50" y="76" className="fill-amber-300 text-[11px] font-mono font-bold">
+            $ sudo ufw default deny incoming   # Tout bloquer par défaut
+          </text>
+          <text x="50" y="102" className="fill-emerald-400 text-[11px] font-mono">
+            $ sudo ufw allow 443/tcp           # HTTPS public autorisé       → ALLOW
+          </text>
+          <text x="50" y="128" className="fill-emerald-400 text-[11px] font-mono">
+            $ sudo ufw allow 80/tcp            # Redirection HTTPS           → ALLOW
+          </text>
+          <text x="50" y="154" className="fill-sky-300 text-[11px] font-mono">
+            $ sudo ufw allow from 203.0.113.10 to any port 22   # SSH Admin  → RESTREINT
+          </text>
+          <text x="50" y="180" className="fill-rose-400 text-[11px] font-mono">
+            # Ports 5432 (SQL), 3306, 23 (Telnet), 445 (SMB)                 → DROP
+          </text>
+          <text x="50" y="206" className="fill-white text-[11px] font-mono font-bold">
+            $ sudo ufw enable &amp;&amp; sudo ufw status verbose
+          </text>
+        </>
+      )}
+
+      {step === 5 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 6 · Maintien en Production : Fail2ban, Supervision &amp; Sauvegardes
+          </text>
+          {[
+            {
+              x: 28,
+              title: 'Fail2ban Actif',
+              line1: 'Bannit automatiquement',
+              line2: 'toute IP après 5 échecs SSH',
+              bg: '#EEF2FF',
+              stroke: '#4F46E5',
+            },
+            {
+              x: 226,
+              title: 'Patchs Auto',
+              line1: 'unattended-upgrades',
+              line2: 'Correctifs noyau & TLS',
+              bg: '#F0F9FF',
+              stroke: '#0284C7',
+            },
+            {
+              x: 424,
+              title: 'Backup 3-2-1',
+              line1: 'Sauvegarde chiffrée',
+              line2: 'hors-site chaque nuit',
+              bg: '#ECFDF5',
+              stroke: '#059669',
+            },
+          ].map((card) => (
+            <g key={card.title}>
+              <rect x={card.x} y="64" width="188" height="142" rx="12" fill={card.bg} stroke={card.stroke} strokeWidth="2" />
+              <text x={card.x + 94} y="102" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+                {card.title}
+              </text>
+              <text x={card.x + 94} y="134" textAnchor="middle" className="fill-slate-700 text-[11px]">
+                {card.line1}
+              </text>
+              <text x={card.x + 94} y="156" textAnchor="middle" className="fill-slate-700 text-[11px]">
+                {card.line2}
+              </text>
+            </g>
+          ))}
+        </>
+      )}
+    </svg>
+  );
+};
+
+const Island20Visual: React.FC<{ step: number }> = ({ step }) => {
+  return (
+    <svg
+      viewBox="0 0 640 260"
+      className="w-full h-auto"
+      role="img"
+      aria-label="Animation Switching L2, VLANs 802.1Q, Trunk et Wi-Fi WPA3-Enterprise"
+    >
+      <rect x="0" y="0" width="640" height="260" rx="12" fill="#EBF4FA" />
+
+      {step === 0 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 1 · Danger du Réseau Plat (1 seul domaine de broadcast)
+          </text>
+          <rect x="44" y="48" width="552" height="178" rx="14" fill="#FEF2F2" stroke="#DC2626" strokeWidth="2" strokeDasharray="6 4" />
+          <text x="320" y="72" textAnchor="middle" className="fill-rose-700 text-[11px] font-mono font-bold">
+            VLAN 1 UNIQUE — TOUS LES APPAREILS SE VOIENT DIRECTEMENT
+          </text>
+          {[
+            { x: 70, label: 'Invité Wi-Fi', sub: 'PC infecté', bg: '#FEE2E2', stroke: '#DC2626' },
+            { x: 205, label: 'Employés', sub: '192.168.1.20', bg: '#FFFFFF', stroke: '#64748B' },
+            { x: 340, label: 'Direction', sub: '192.168.1.10', bg: '#FFFFFF', stroke: '#64748B' },
+            { x: 475, label: 'Serveur ERP', sub: 'EXPOSÉ !', bg: '#FEF3C7', stroke: '#D97706' },
+          ].map((n) => (
+            <g key={n.label}>
+              <rect x={n.x} y="102" width="112" height="82" rx="10" fill={n.bg} stroke={n.stroke} strokeWidth="2" />
+              <text x={n.x + 56} y="138" textAnchor="middle" className="fill-slate-900 text-[11px] font-bold">
+                {n.label}
+              </text>
+              <text x={n.x + 56} y="160" textAnchor="middle" className="fill-slate-600 text-[10px] font-mono">
+                {n.sub}
+              </text>
+            </g>
+          ))}
+        </>
+      )}
+
+      {step === 1 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 2 · Segmentation Logique en 4 VLANs sur Switch Managé
+          </text>
+          <rect x="195" y="48" width="250" height="44" rx="8" fill="#0F172A" />
+          <text x="320" y="75" textAnchor="middle" className="fill-sky-300 text-[12px] font-mono font-bold">
+            SWITCH L2 · SW-CAMPUS-01
+          </text>
+          {[
+            { x: 32, vlan: 'VLAN 10', name: 'Direction', port: 'Fa0/1 Access', bg: '#EEF2FF', stroke: '#4F46E5' },
+            { x: 180, vlan: 'VLAN 20', name: 'Employés', port: 'Fa0/2 Access', bg: '#F0F9FF', stroke: '#0284C7' },
+            { x: 328, vlan: 'VLAN 30', name: 'Invités', port: 'Fa0/3 Access', bg: '#FEF3C7', stroke: '#D97706' },
+            { x: 476, vlan: 'VLAN 99', name: 'Serveurs', port: 'Fa0/4 Access', bg: '#ECFDF5', stroke: '#059669' },
+          ].map((v) => (
+            <g key={v.vlan}>
+              <line x1="320" y1="92" x2={v.x + 66} y2="128" stroke={v.stroke} strokeWidth="2.5" />
+              <rect x={v.x} y="128" width="132" height="96" rx="10" fill={v.bg} stroke={v.stroke} strokeWidth="2" />
+              <text x={v.x + 66} y="156" textAnchor="middle" className="fill-slate-900 text-[12px] font-mono font-bold">
+                {v.vlan}
+              </text>
+              <text x={v.x + 66} y="178" textAnchor="middle" className="fill-slate-800 text-[11px] font-bold">
+                {v.name}
+              </text>
+              <text x={v.x + 66} y="202" textAnchor="middle" className="fill-slate-600 text-[10px] font-mono">
+                {v.port}
+              </text>
+            </g>
+          ))}
+        </>
+      )}
+
+      {step === 2 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 3 · Lien Trunk IEEE 802.1Q (Étiquetage des Trames)
+          </text>
+          <rect x="36" y="84" width="144" height="92" rx="10" fill="#0F172A" />
+          <text x="108" y="124" textAnchor="middle" className="fill-white text-[12px] font-bold">
+            Switch Étage
+          </text>
+          <text x="108" y="146" textAnchor="middle" className="fill-sky-300 text-[10px] font-mono">
+            Gi0/1 : TRUNK
+          </text>
+
+          <rect x="460" y="84" width="144" height="92" rx="10" fill="#0369A1" />
+          <text x="532" y="124" textAnchor="middle" className="fill-white text-[12px] font-bold">
+            Routeur Cœur
+          </text>
+          <text x="532" y="146" textAnchor="middle" className="fill-sky-100 text-[10px] font-mono">
+            802.1Q Sub-if
+          </text>
+
+          <line x1="180" y1="130" x2="460" y2="130" stroke="#0284C7" strokeWidth="6" />
+          <rect x="214" y="96" width="212" height="68" rx="8" fill="#FFFFFF" stroke="#0284C7" strokeWidth="2" />
+          <text x="320" y="122" textAnchor="middle" className="fill-slate-900 text-[11px] font-mono font-bold">
+            Trame Ethernet + Tag 802.1Q
+          </text>
+          <text x="320" y="146" textAnchor="middle" className="fill-sky-700 text-[11px] font-mono font-bold">
+            [VLAN 10] [VLAN 20] [VLAN 30] [VLAN 99]
+          </text>
+        </>
+      )}
+
+      {step === 3 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 4 · Routage Inter-VLAN &amp; Filtrage par ACL
+          </text>
+          <rect x="34" y="64" width="160" height="68" rx="10" fill="#F0F9FF" stroke="#0284C7" strokeWidth="2" />
+          <text x="114" y="94" textAnchor="middle" className="fill-slate-900 text-[12px] font-bold">
+            VLAN 20 Employés
+          </text>
+          <text x="114" y="114" textAnchor="middle" className="fill-sky-700 text-[10px] font-mono">
+            10.20.0.0/24
+          </text>
+
+          <rect x="34" y="156" width="160" height="68" rx="10" fill="#FEF3C7" stroke="#D97706" strokeWidth="2" />
+          <text x="114" y="186" textAnchor="middle" className="fill-slate-900 text-[12px] font-bold">
+            VLAN 30 Invités
+          </text>
+          <text x="114" y="206" textAnchor="middle" className="fill-amber-800 text-[10px] font-mono">
+            10.30.0.0/24
+          </text>
+
+          <rect x="250" y="102" width="140" height="82" rx="10" fill="#0F172A" />
+          <text x="320" y="138" textAnchor="middle" className="fill-white text-[12px] font-bold">
+            Routeur + ACL
+          </text>
+          <text x="320" y="160" textAnchor="middle" className="fill-emerald-400 text-[10px] font-mono">
+            Filtrage L3
+          </text>
+
+          <rect x="446" y="102" width="160" height="82" rx="10" fill="#ECFDF5" stroke="#059669" strokeWidth="2" />
+          <text x="526" y="138" textAnchor="middle" className="fill-slate-900 text-[12px] font-bold">
+            VLAN 99 Serveurs
+          </text>
+          <text x="526" y="160" textAnchor="middle" className="fill-emerald-700 text-[10px] font-mono">
+            ERP :443 uniquement
+          </text>
+
+          <line x1="194" y1="98" x2="250" y2="128" stroke="#059669" strokeWidth="3" />
+          <line x1="390" y1="143" x2="446" y2="143" stroke="#059669" strokeWidth="3" />
+          <line x1="194" y1="190" x2="250" y2="162" stroke="#DC2626" strokeWidth="3" strokeDasharray="5 4" />
+          <text x="218" y="212" textAnchor="middle" className="fill-rose-700 text-[10px] font-mono font-bold">
+            DENY Invités → Serveurs
+          </text>
+        </>
+      )}
+
+      {step === 4 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 5 · Wi-Fi Entreprise WPA3-Enterprise (802.1X / RADIUS)
+          </text>
+          <rect x="34" y="88" width="150" height="92" rx="10" fill="#FFFFFF" stroke="#0284C7" strokeWidth="2" />
+          <text x="109" y="124" textAnchor="middle" className="fill-slate-900 text-[12px] font-bold">
+            Laptop Salarié
+          </text>
+          <text x="109" y="148" textAnchor="middle" className="fill-sky-700 text-[10px] font-mono">
+            Certificat / Compte AD
+          </text>
+
+          <rect x="245" y="88" width="150" height="92" rx="10" fill="#0369A1" />
+          <text x="320" y="124" textAnchor="middle" className="fill-white text-[12px] font-bold">
+            Borne Wi-Fi 6/7
+          </text>
+          <text x="320" y="148" textAnchor="middle" className="fill-sky-100 text-[10px] font-mono">
+            WPA3-Enterprise
+          </text>
+
+          <rect x="456" y="88" width="150" height="92" rx="10" fill="#ECFDF5" stroke="#059669" strokeWidth="2" />
+          <text x="531" y="124" textAnchor="middle" className="fill-slate-900 text-[12px] font-bold">
+            Serveur RADIUS
+          </text>
+          <text x="531" y="148" textAnchor="middle" className="fill-emerald-700 text-[10px] font-mono">
+            Auth 802.1X · OK
+          </text>
+
+          <line x1="184" y1="134" x2="245" y2="134" stroke="#0284C7" strokeWidth="3" />
+          <line x1="395" y1="134" x2="456" y2="134" stroke="#059669" strokeWidth="3" />
+        </>
+      )}
+
+      {step === 5 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 6 · Wi-Fi Visiteurs Isolé (VLAN 30) + Client Isolation
+          </text>
+          {[
+            { x: 32, title: 'SSID Cyberland-Staff', line1: 'WPA3-Enterprise + RADIUS', line2: 'Assigné au VLAN 20', bg: '#F0F9FF', stroke: '#0284C7' },
+            { x: 226, title: 'SSID Cyberland-Guest', line1: 'Portail Captif + Client Isolation', line2: 'Assigné au VLAN 30', bg: '#FEF3C7', stroke: '#D97706' },
+            { x: 420, title: 'Défense L2/L3 Active', line1: 'Port Security + ACL Inter-VLAN', line2: 'Zéro mouvement latéral', bg: '#ECFDF5', stroke: '#059669' },
+          ].map((c) => (
+            <g key={c.title}>
+              <rect x={c.x} y="68" width="188" height="140" rx="12" fill={c.bg} stroke={c.stroke} strokeWidth="2" />
+              <text x={c.x + 94} y="106" textAnchor="middle" className="fill-slate-900 text-[12px] font-bold">
+                {c.title}
+              </text>
+              <text x={c.x + 94} y="138" textAnchor="middle" className="fill-slate-700 text-[11px]">
+                {c.line1}
+              </text>
+              <text x={c.x + 94} y="162" textAnchor="middle" className="fill-slate-600 text-[10px] font-mono">
+                {c.line2}
+              </text>
+            </g>
+          ))}
+        </>
+      )}
+    </svg>
+  );
+};
+
+/* ---------- ISLAND 21: IPv6 & Transition IPv4/IPv6 ---------- */
+const Island21Visual: React.FC<{ step: number }> = ({ step }) => {
+  return (
+    <svg viewBox="0 0 640 260" className="w-full h-full max-h-[260px]" role="img" aria-label="Animation IPv6 et transition réseau">
+      <rect x="0" y="0" width="640" height="260" fill="#EBF4FA" />
+
+      {step === 0 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 1 · IPv4 (32 bits épuisé) vs IPv6 (128 bits quasi infini)
+          </text>
+          <rect x="34" y="56" width="254" height="168" rx="14" fill="#FFF7ED" stroke="#EA580C" strokeWidth="2" />
+          <text x="161" y="84" textAnchor="middle" className="fill-orange-900 text-[13px] font-bold">
+            IPv4 — 32 bits
+          </text>
+          <text x="161" y="108" textAnchor="middle" className="fill-slate-800 text-[12px] font-mono font-bold">
+            192.168.1.42
+          </text>
+          <text x="161" y="136" textAnchor="middle" className="fill-slate-700 text-[11px]">
+            4,3 milliards d’adresses (2³²)
+          </text>
+          <rect x="64" y="156" width="194" height="44" rx="8" fill="#FFEDD5" stroke="#FB923C" />
+          <text x="161" y="175" textAnchor="middle" className="fill-orange-900 text-[10px] font-bold">
+            Stock RIR épuisé
+          </text>
+          <text x="161" y="191" textAnchor="middle" className="fill-orange-800 text-[10px]">
+            NAT / CGNAT obligatoire
+          </text>
+
+          <rect x="352" y="56" width="254" height="168" rx="14" fill="#ECFDF5" stroke="#059669" strokeWidth="2" />
+          <text x="479" y="84" textAnchor="middle" className="fill-emerald-900 text-[13px] font-bold">
+            IPv6 — 128 bits
+          </text>
+          <text x="479" y="108" textAnchor="middle" className="fill-slate-800 text-[11px] font-mono font-bold">
+            2001:db8:cafe::1
+          </text>
+          <text x="479" y="136" textAnchor="middle" className="fill-slate-700 text-[11px]">
+            3,4 × 10³⁸ adresses (2¹²⁸)
+          </text>
+          <rect x="382" y="156" width="194" height="44" rx="8" fill="#D1FAE5" stroke="#10B981" />
+          <text x="479" y="175" textAnchor="middle" className="fill-emerald-900 text-[10px] font-bold">
+            Connectivité bout en bout
+          </text>
+          <text x="479" y="191" textAnchor="middle" className="fill-emerald-800 text-[10px]">
+            Sous-réseaux standard en /64
+          </text>
+
+          <text x="320" y="144" textAnchor="middle" className="fill-sky-700 text-[18px] font-black">
+            →
+          </text>
+        </>
+      )}
+
+      {step === 1 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 2 · Compression IPv6 conforme à la RFC 5952
+          </text>
+          <rect x="28" y="52" width="584" height="50" rx="10" fill="#FFFFFF" stroke="#0284C7" strokeWidth="1.8" />
+          <text x="320" y="72" textAnchor="middle" className="fill-slate-500 text-[10px] font-bold">
+            FORME COMPLÈTE (8 HEXTETS = 128 BITS)
+          </text>
+          <text x="320" y="92" textAnchor="middle" className="fill-slate-900 text-[12px] font-mono font-bold">
+            2001 : 0db8 : 0000 : 0000 : 0000 : 0000 : 0042 : 0001
+          </text>
+
+          <line x1="320" y1="102" x2="320" y2="128" stroke="#0284C7" strokeWidth="2" strokeDasharray="4 3" />
+          <text x="320" y="121" textAnchor="middle" className="fill-sky-800 text-[10px] font-bold">
+            1. Retirer zéros de tête · 2. Remplacer la plus longue suite de 0000 par :: (1 seule fois)
+          </text>
+
+          <rect x="90" y="138" width="460" height="58" rx="12" fill="#ECFDF5" stroke="#059669" strokeWidth="2" />
+          <text x="320" y="160" textAnchor="middle" className="fill-emerald-800 text-[10px] font-bold">
+            FORME COMPRESSÉE VALIDE
+          </text>
+          <text x="320" y="182" textAnchor="middle" className="fill-emerald-950 text-[16px] font-mono font-extrabold">
+            2001:db8::42:1
+          </text>
+
+          <rect x="130" y="210" width="380" height="32" rx="8" fill="#FEF2F2" stroke="#DC2626" />
+          <text x="320" y="230" textAnchor="middle" className="fill-rose-800 text-[11px] font-bold">
+            Interdit : 2001::db8::1 (deux « :: » créent une ambiguïté de longueur)
+          </text>
+        </>
+      )}
+
+      {step === 2 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 3 · Cartographie des préfixes IPv6 à connaître par cœur
+          </text>
+          {[
+            { x: 24, prefix: '::1/128', name: 'Loopback', desc: 'Machine locale (localhost)', bg: '#F8FAFC', stroke: '#475569' },
+            { x: 174, prefix: 'fe80::/10', name: 'Link-Local', desc: 'LAN uniquement (non routé)', bg: '#FEF3C7', stroke: '#D97706' },
+            { x: 324, prefix: 'fc00::/7', name: 'ULA (Privé)', desc: 'Intranet (ex. fd12:...)', bg: '#EDE9FE', stroke: '#7C3AED' },
+            { x: 474, prefix: '2000::/3', name: 'Global Unicast', desc: 'Routable sur Internet', bg: '#ECFDF5', stroke: '#059669' },
+          ].map((item) => (
+            <g key={item.prefix}>
+              <rect x={item.x} y="64" width="142" height="156" rx="12" fill={item.bg} stroke={item.stroke} strokeWidth="2" />
+              <text x={item.x + 71} y="102" textAnchor="middle" className="fill-slate-900 text-[13px] font-mono font-extrabold">
+                {item.prefix}
+              </text>
+              <text x={item.x + 71} y="136" textAnchor="middle" className="fill-slate-900 text-[12px] font-bold">
+                {item.name}
+              </text>
+              <text x={item.x + 71} y="168" textAnchor="middle" className="fill-slate-700 text-[10px]">
+                {item.desc}
+              </text>
+            </g>
+          ))}
+        </>
+      )}
+
+      {step === 3 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 4 · Auto-configuration SLAAC & NDP (ICMPv6)
+          </text>
+          <rect x="44" y="72" width="146" height="118" rx="12" fill="#FFFFFF" stroke="#0284C7" strokeWidth="2" />
+          <text x="117" y="102" textAnchor="middle" className="fill-slate-900 text-[12px] font-bold">
+            Nouveau Poste
+          </text>
+          <text x="117" y="126" textAnchor="middle" className="fill-sky-700 text-[10px] font-mono">
+            fe80::a1b2 (Link-Local)
+          </text>
+          <text x="117" y="152" textAnchor="middle" className="fill-emerald-700 text-[10px] font-mono font-bold">
+            + 2001:db8:1::9f4e/64
+          </text>
+          <text x="117" y="172" textAnchor="middle" className="fill-slate-500 text-[9px]">
+            DAD : vérifie unicité
+          </text>
+
+          <rect x="450" y="72" width="146" height="118" rx="12" fill="#F0F9FF" stroke="#0369A1" strokeWidth="2" />
+          <text x="523" y="102" textAnchor="middle" className="fill-slate-900 text-[12px] font-bold">
+            Routeur Passerelle
+          </text>
+          <text x="523" y="126" textAnchor="middle" className="fill-sky-800 text-[10px] font-mono">
+            Préfixe : 2001:db8:1::/64
+          </text>
+          <text x="523" y="150" textAnchor="middle" className="fill-slate-600 text-[10px]">
+            RDNSS : 2606:4700::1111
+          </text>
+
+          <line x1="194" y1="104" x2="444" y2="104" stroke="#0284C7" strokeWidth="2.5" />
+          <text x="320" y="96" textAnchor="middle" className="fill-sky-900 text-[10px] font-bold">
+            1. Router Solicitation (RS → ff02::2) →
+          </text>
+
+          <line x1="444" y1="146" x2="194" y2="146" stroke="#059669" strokeWidth="2.5" />
+          <text x="320" y="138" textAnchor="middle" className="fill-emerald-900 text-[10px] font-bold">
+            ← 2. Router Advertisement (RA : /64 + Gateway)
+          </text>
+
+          <rect x="120" y="210" width="400" height="32" rx="8" fill="#ECFDF5" stroke="#059669" />
+          <text x="320" y="230" textAnchor="middle" className="fill-emerald-900 text-[11px] font-bold">
+            Aucun broadcast ARP : NDP utilise le multicast sollicité ICMPv6 (types 133–136)
+          </text>
+        </>
+      )}
+
+      {step === 4 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 5 · Transition Dual-Stack, DNS AAAA & Pare-feu miroir
+          </text>
+          <rect x="34" y="68" width="160" height="128" rx="12" fill="#FFFFFF" stroke="#0284C7" strokeWidth="2" />
+          <text x="114" y="98" textAnchor="middle" className="fill-slate-900 text-[12px] font-bold">
+            Client Dual-Stack
+          </text>
+          <text x="114" y="124" textAnchor="middle" className="fill-slate-600 text-[10px]">
+            Happy Eyeballs (RFC 8305)
+          </text>
+          <text x="114" y="146" textAnchor="middle" className="fill-emerald-700 text-[10px] font-bold">
+            1er essai : IPv6 (AAAA)
+          </text>
+          <text x="114" y="168" textAnchor="middle" className="fill-orange-700 text-[10px]">
+            Fallback : IPv4 (A)
+          </text>
+
+          <rect x="240" y="68" width="160" height="128" rx="12" fill="#FEF3C7" stroke="#D97706" strokeWidth="2" />
+          <text x="320" y="98" textAnchor="middle" className="fill-amber-950 text-[12px] font-bold">
+            Pare-feu Dual-Stack
+          </text>
+          <text x="320" y="126" textAnchor="middle" className="fill-slate-800 text-[10px] font-mono">
+            nftables inet filter
+          </text>
+          <text x="320" y="148" textAnchor="middle" className="fill-amber-900 text-[10px]">
+            Filtre IPv4 ET IPv6
+          </text>
+          <text x="320" y="170" textAnchor="middle" className="fill-slate-700 text-[10px]">
+            Autorise ICMPv6 NDP
+          </text>
+
+          <rect x="446" y="68" width="160" height="128" rx="12" fill="#ECFDF5" stroke="#059669" strokeWidth="2" />
+          <text x="526" y="98" textAnchor="middle" className="fill-emerald-950 text-[12px] font-bold">
+            Serveur Web
+          </text>
+          <text x="526" y="126" textAnchor="middle" className="fill-emerald-800 text-[10px] font-mono">
+            AAAA: 2001:db8::443
+          </text>
+          <text x="526" y="148" textAnchor="middle" className="fill-slate-700 text-[10px] font-mono">
+            A: 203.0.113.10
+          </text>
+          <text x="526" y="170" textAnchor="middle" className="fill-slate-600 text-[10px]">
+            listen [::]:443 ssl
+          </text>
+
+          <line x1="194" y1="132" x2="240" y2="132" stroke="#059669" strokeWidth="2.5" />
+          <line x1="400" y1="132" x2="446" y2="132" stroke="#059669" strokeWidth="2.5" />
+        </>
+      )}
+    </svg>
+  );
+};
+
+/* ---------- ISLAND 22: Sécurité API, OAuth 2.0 & JWT ---------- */
+const Island22Visual: React.FC<{ step: number }> = ({ step }) => {
+  return (
+    <svg viewBox="0 0 640 260" className="w-full h-full max-h-[260px]" role="img" aria-label="Animation Sécurité API, OAuth 2.0 et JWT">
+      <rect x="0" y="0" width="640" height="260" fill="#EBF4FA" />
+
+      {step === 0 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 1 · Passerelle API (API Gateway) & Contrôle centralisé
+          </text>
+          <rect x="30" y="76" width="144" height="112" rx="12" fill="#FFFFFF" stroke="#0284C7" strokeWidth="2" />
+          <text x="102" y="112" textAnchor="middle" className="fill-slate-900 text-[12px] font-bold">
+            SPA / Mobile
+          </text>
+          <text x="102" y="136" textAnchor="middle" className="fill-slate-600 text-[10px] font-mono">
+            GET /api/v1/orders
+          </text>
+          <text x="102" y="158" textAnchor="middle" className="fill-sky-700 text-[10px] font-mono">
+            Bearer eyJhbGc...
+          </text>
+
+          <rect x="234" y="60" width="172" height="144" rx="14" fill="#EEF2FF" stroke="#4F46E5" strokeWidth="2.2" />
+          <text x="320" y="88" textAnchor="middle" className="fill-indigo-950 text-[12px] font-bold">
+            API Gateway
+          </text>
+          <text x="320" y="114" textAnchor="middle" className="fill-indigo-800 text-[10px]">
+            • Terminaison TLS 1.3
+          </text>
+          <text x="320" y="136" textAnchor="middle" className="fill-indigo-800 text-[10px]">
+            • Validation JWT / JWKS
+          </text>
+          <text x="320" y="158" textAnchor="middle" className="fill-indigo-800 text-[10px]">
+            • Rate Limiting (429)
+          </text>
+          <text x="320" y="180" textAnchor="middle" className="fill-indigo-800 text-[10px]">
+            • Schéma JSON strict
+          </text>
+
+          <rect x="466" y="76" width="144" height="112" rx="12" fill="#ECFDF5" stroke="#059669" strokeWidth="2" />
+          <text x="538" y="112" textAnchor="middle" className="fill-emerald-950 text-[12px] font-bold">
+            Microservices
+          </text>
+          <text x="538" y="136" textAnchor="middle" className="fill-emerald-800 text-[10px]">
+            Contrôle RBAC / BOLA
+          </text>
+          <text x="538" y="158" textAnchor="middle" className="fill-slate-600 text-[10px]">
+            Base de données
+          </text>
+
+          <line x1="174" y1="132" x2="234" y2="132" stroke="#4F46E5" strokeWidth="2.5" />
+          <line x1="406" y1="132" x2="466" y2="132" stroke="#059669" strokeWidth="2.5" />
+        </>
+      )}
+
+      {step === 1 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 2 · OAuth 2.0 Authorization Code + PKCE (S256)
+          </text>
+          <rect x="34" y="62" width="150" height="156" rx="12" fill="#FFFFFF" stroke="#0284C7" strokeWidth="2" />
+          <text x="109" y="92" textAnchor="middle" className="fill-slate-900 text-[12px] font-bold">
+            Application Cliente
+          </text>
+          <text x="109" y="120" textAnchor="middle" className="fill-sky-700 text-[10px] font-mono">
+            secret: code_verifier
+          </text>
+          <text x="109" y="144" textAnchor="middle" className="fill-slate-600 text-[10px] font-mono">
+            hash: code_challenge
+          </text>
+          <text x="109" y="176" textAnchor="middle" className="fill-emerald-700 text-[10px] font-bold">
+            Zéro mot de passe stocké
+          </text>
+
+          <rect x="456" y="62" width="150" height="156" rx="12" fill="#ECFDF5" stroke="#059669" strokeWidth="2" />
+          <text x="531" y="92" textAnchor="middle" className="fill-emerald-950 text-[12px] font-bold">
+            Serveur IdP (OAuth)
+          </text>
+          <text x="531" y="120" textAnchor="middle" className="fill-slate-700 text-[10px]">
+            Authentifie l’utilisateur
+          </text>
+          <text x="531" y="144" textAnchor="middle" className="fill-slate-700 text-[10px]">
+            Vérifie SHA256(verifier)
+          </text>
+          <text x="531" y="176" textAnchor="middle" className="fill-emerald-800 text-[10px] font-bold">
+            Émet Access + Refresh
+          </text>
+
+          <line x1="186" y1="92" x2="452" y2="92" stroke="#0284C7" strokeWidth="2" />
+          <text x="320" y="84" textAnchor="middle" className="fill-sky-900 text-[10px] font-bold">
+            1. /authorize + code_challenge (S256) →
+          </text>
+
+          <line x1="452" y1="130" x2="186" y2="130" stroke="#D97706" strokeWidth="2" />
+          <text x="320" y="122" textAnchor="middle" className="fill-amber-900 text-[10px] font-bold">
+            ← 2. Code temporaire à usage unique
+          </text>
+
+          <line x1="186" y1="168" x2="452" y2="168" stroke="#4F46E5" strokeWidth="2" />
+          <text x="320" y="160" textAnchor="middle" className="fill-indigo-900 text-[10px] font-bold">
+            3. /token + code + code_verifier →
+          </text>
+
+          <line x1="452" y1="204" x2="186" y2="204" stroke="#059669" strokeWidth="2.5" />
+          <text x="320" y="196" textAnchor="middle" className="fill-emerald-900 text-[10px] font-bold">
+            ← 4. Access Token JWT (15 min)
+          </text>
+        </>
+      )}
+
+      {step === 2 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 3 · Anatomie d’un JSON Web Token (JWT)
+          </text>
+          {[
+            {
+              x: 26,
+              title: '1. HEADER',
+              sub: 'Base64Url',
+              lines: ['{ "alg": "RS256",', '  "typ": "JWT",', '  "kid": "key-2026" }'],
+              bg: '#FEF2F2',
+              stroke: '#E11D48',
+            },
+            {
+              x: 226,
+              title: '2. PAYLOAD (Claims)',
+              sub: 'Lisible par tous !',
+              lines: ['{ "sub": "u_42",', '  "role": "analyst",', '  "exp": 1795501200 }'],
+              bg: '#F5F3FF',
+              stroke: '#7C3AED',
+            },
+            {
+              x: 426,
+              title: '3. SIGNATURE',
+              sub: 'Clé privée IdP',
+              lines: ['RSASHA256(', '  header + "." + payload,', '  privateKey )'],
+              bg: '#ECFDF5',
+              stroke: '#059669',
+            },
+          ].map((part) => (
+            <g key={part.title}>
+              <rect x={part.x} y="56" width="188" height="154" rx="12" fill={part.bg} stroke={part.stroke} strokeWidth="2" />
+              <text x={part.x + 94} y="82" textAnchor="middle" className="fill-slate-900 text-[11px] font-extrabold">
+                {part.title}
+              </text>
+              <text x={part.x + 94} y="100" textAnchor="middle" className="fill-slate-600 text-[10px]">
+                {part.sub}
+              </text>
+              {part.lines.map((line, i) => (
+                <text key={line} x={part.x + 14} y={132 + i * 20} className="fill-slate-800 text-[10px] font-mono">
+                  {line}
+                </text>
+              ))}
+            </g>
+          ))}
+          <text x="220" y="138" textAnchor="middle" className="fill-slate-900 text-[20px] font-black">.</text>
+          <text x="420" y="138" textAnchor="middle" className="fill-slate-900 text-[20px] font-black">.</text>
+
+          <text x="320" y="236" textAnchor="middle" className="fill-slate-700 text-[11px] font-bold">
+            Signé ≠ Chiffré : ne stockez jamais de mot de passe ou secret bancaire dans le Payload.
+          </text>
+        </>
+      )}
+
+      {step === 3 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 4 · Neutraliser l’attaque alg:none & sécuriser le cycle de vie
+          </text>
+          <rect x="34" y="60" width="268" height="162" rx="12" fill="#FEF2F2" stroke="#DC2626" strokeWidth="2" />
+          <text x="168" y="88" textAnchor="middle" className="fill-rose-900 text-[12px] font-bold">
+            Attaque JWT classique
+          </text>
+          <text x="168" y="116" textAnchor="middle" className="fill-rose-800 text-[10px] font-mono">
+            Header modifié : &#123;"alg": "none"&#125;
+          </text>
+          <text x="168" y="138" textAnchor="middle" className="fill-rose-800 text-[10px] font-mono">
+            Payload modifié : role="admin"
+          </text>
+          <text x="168" y="162" textAnchor="middle" className="fill-slate-700 text-[10px]">
+            Signature supprimée ou jeton volé
+          </text>
+          <text x="168" y="186" textAnchor="middle" className="fill-rose-700 text-[10px] font-bold">
+            → Refusé si le backend valide strictement
+          </text>
+
+          <rect x="338" y="60" width="268" height="162" rx="12" fill="#ECFDF5" stroke="#059669" strokeWidth="2" />
+          <text x="472" y="88" textAnchor="middle" className="fill-emerald-900 text-[12px] font-bold">
+            Défense côté Serveur
+          </text>
+          <text x="472" y="116" textAnchor="middle" className="fill-emerald-900 text-[10px]">
+            ✓ Liste blanche : algorithms: [&quot;RS256&quot;]
+          </text>
+          <text x="472" y="140" textAnchor="middle" className="fill-emerald-900 text-[10px]">
+            ✓ Vérifier iss, aud et exp (≤ 15 min)
+          </text>
+          <text x="472" y="164" textAnchor="middle" className="fill-emerald-900 text-[10px]">
+            ✓ Refresh Token en cookie HttpOnly
+          </text>
+          <text x="472" y="188" textAnchor="middle" className="fill-emerald-900 text-[10px]">
+            ✓ Rotation + détection de réutilisation
+          </text>
+        </>
+      )}
+
+      {step === 4 && (
+        <>
+          <text x="320" y="28" textAnchor="middle" className="fill-slate-900 text-[13px] font-bold">
+            Étape 5 · OWASP API #1 : Bloquer IDOR / BOLA & Abus de débit
+          </text>
+          <rect x="34" y="62" width="180" height="156" rx="12" fill="#FFF7ED" stroke="#EA580C" strokeWidth="2" />
+          <text x="124" y="92" textAnchor="middle" className="fill-orange-950 text-[12px] font-bold">
+            Requête suspecte
+          </text>
+          <text x="124" y="122" textAnchor="middle" className="fill-slate-800 text-[10px] font-mono">
+            Token sub = user_42
+          </text>
+          <text x="124" y="146" textAnchor="middle" className="fill-rose-700 text-[10px] font-mono font-bold">
+            GET /invoices/1043
+          </text>
+          <text x="124" y="172" textAnchor="middle" className="fill-slate-600 text-[10px]">
+            (appartient à user_99)
+          </text>
+
+          <rect x="242" y="62" width="180" height="156" rx="12" fill="#EEF2FF" stroke="#4F46E5" strokeWidth="2" />
+          <text x="332" y="92" textAnchor="middle" className="fill-indigo-950 text-[12px] font-bold">
+            Contrôle d’objet (BOLA)
+          </text>
+          <text x="332" y="124" textAnchor="middle" className="fill-indigo-900 text-[10px] font-mono">
+            invoice.ownerId ===
+          </text>
+          <text x="332" y="144" textAnchor="middle" className="fill-indigo-900 text-[10px] font-mono">
+            req.user.sub ?
+          </text>
+          <text x="332" y="176" textAnchor="middle" className="fill-rose-700 text-[11px] font-extrabold">
+            FAUX → HTTP 403
+          </text>
+
+          <rect x="450" y="62" width="156" height="156" rx="12" fill="#ECFDF5" stroke="#059669" strokeWidth="2" />
+          <text x="528" y="92" textAnchor="middle" className="fill-emerald-950 text-[12px] font-bold">
+            Hygiène API
+          </text>
+          <text x="528" y="124" textAnchor="middle" className="fill-emerald-900 text-[10px]">
+            • Identifiants UUIDv4
+          </text>
+          <text x="528" y="148" textAnchor="middle" className="fill-emerald-900 text-[10px]">
+            • Rate Limit (HTTP 429)
+          </text>
+          <text x="528" y="172" textAnchor="middle" className="fill-emerald-900 text-[10px]">
+            • Journalisation SIEM
+          </text>
+
+          <line x1="214" y1="140" x2="242" y2="140" stroke="#EA580C" strokeWidth="2" />
+          <line x1="422" y1="140" x2="450" y2="140" stroke="#059669" strokeWidth="2" />
+        </>
+      )}
+    </svg>
+  );
+};
+
+
+
 
 
 

@@ -18,6 +18,8 @@ interface ExpertiseBadgesShowcaseProps {
   totalXp: number;
   passedExamsCount: number;
   bestExamScore: number | null;
+  speedrunsCompleted?: number;
+  neutralizedAttacksCount?: number;
   onOpenExam: () => void;
 }
 
@@ -202,13 +204,22 @@ export const ExpertiseBadgesShowcase: React.FC<ExpertiseBadgesShowcaseProps> = (
   totalXp,
   passedExamsCount,
   bestExamScore,
+  speedrunsCompleted = 0,
+  neutralizedAttacksCount = 0,
   onOpenExam,
 }) => {
   const [filter, setFilter] = useState<MedalFilter>('all');
 
   const badges = useMemo(
-    () => evaluateExpertiseBadges(totalXp, passedExamsCount, bestExamScore),
-    [totalXp, passedExamsCount, bestExamScore]
+    () =>
+      evaluateExpertiseBadges(
+        totalXp,
+        passedExamsCount,
+        bestExamScore,
+        speedrunsCompleted,
+        neutralizedAttacksCount
+      ),
+    [totalXp, passedExamsCount, bestExamScore, speedrunsCompleted, neutralizedAttacksCount]
   );
 
   const unlockedCount = badges.filter((b) => b.unlocked).length;
@@ -438,6 +449,51 @@ export const ExpertiseBadgesShowcase: React.FC<ExpertiseBadgesShowcaseProps> = (
                       <span className="font-mono text-[11px] font-semibold text-slate-800 dark:text-slate-200 tabular-nums text-right">
                         {badge.minPassedExams} réussi{badge.minPassedExams > 1 ? 's' : ''}
                         {badge.minExamScore !== null ? ` · ≥ ${badge.minExamScore}/20` : ''}
+                      </span>
+                    </div>
+                  )}
+
+                  {badge.minSpeedruns && (
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className={`inline-flex items-center gap-1.5 ${
+                          speedrunsCompleted >= badge.minSpeedruns
+                            ? 'text-emerald-700 dark:text-emerald-400 font-medium'
+                            : 'text-slate-600 dark:text-slate-400'
+                        }`}
+                      >
+                        {speedrunsCompleted >= badge.minSpeedruns ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                        ) : (
+                          <Lock className="w-3 h-3 shrink-0 text-slate-400" />
+                        )}
+                        Circuits Speedrun
+                      </span>
+                      <span className="font-mono text-[11px] font-semibold text-slate-800 dark:text-slate-200 tabular-nums">
+                        {Math.min(speedrunsCompleted, badge.minSpeedruns)} / {badge.minSpeedruns}
+                      </span>
+                    </div>
+                  )}
+
+                  {badge.minNeutralizedAttacks && (
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className={`inline-flex items-center gap-1.5 ${
+                          neutralizedAttacksCount >= badge.minNeutralizedAttacks
+                            ? 'text-emerald-700 dark:text-emerald-400 font-medium'
+                            : 'text-slate-600 dark:text-slate-400'
+                        }`}
+                      >
+                        {neutralizedAttacksCount >= badge.minNeutralizedAttacks ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                        ) : (
+                          <Lock className="w-3 h-3 shrink-0 text-slate-400" />
+                        )}
+                        Attaques neutralisées
+                      </span>
+                      <span className="font-mono text-[11px] font-semibold text-slate-800 dark:text-slate-200 tabular-nums">
+                        {Math.min(neutralizedAttacksCount, badge.minNeutralizedAttacks)} /{' '}
+                        {badge.minNeutralizedAttacks}
                       </span>
                     </div>
                   )}

@@ -1,0 +1,216 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
+    }
+
+    function isValidUserProgress(data) {
+      return data.userId is string
+        && data.userId.size() <= 128
+        && data.userId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.userId == request.auth.uid
+        && data.learnerName is string
+        && data.learnerName.size() >= 1
+        && data.learnerName.size() <= 48
+        && data.completedIslands is list
+        && data.completedIslands.size() <= 25
+        && (data.completedIslands.size() == 0 || data.completedIslands[0] is int)
+        && data.totalXp is number
+        && data.totalXp >= 0
+        && data.totalXp <= 50000
+        && data.bestExamScore is number
+        && data.bestExamScore >= -1
+        && data.bestExamScore <= 20
+        && data.passedExamsCount is int
+        && data.passedExamsCount >= 0
+        && data.passedExamsCount <= 500
+        && data.speedrunsCompleted is int
+        && data.speedrunsCompleted >= 0
+        && data.speedrunsCompleted <= 1000
+        && data.neutralizedAttacksCount is int
+        && data.neutralizedAttacksCount >= 0
+        && data.neutralizedAttacksCount <= 50
+        && data.bestSpeedrunMs is int
+        && data.bestSpeedrunMs >= 0
+        && data.bestSpeedrunMs <= 3600000
+        && data.selectedTrackId is string
+        && data.selectedTrackId.size() <= 20
+        && data.selectedTrackId in ['all', 'network', 'cloud-win', 'soc-cyber']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidLeaderboardEntry(data) {
+      return data.userId is string
+        && data.userId.size() <= 128
+        && data.userId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.userId == request.auth.uid
+        && data.displayName is string
+        && data.displayName.size() >= 1
+        && data.displayName.size() <= 48
+        && data.totalXp is number
+        && data.totalXp >= 0
+        && data.totalXp <= 50000
+        && data.completedIslandsCount is int
+        && data.completedIslandsCount >= 0
+        && data.completedIslandsCount <= 25
+        && data.bestSpeedrunMs is int
+        && data.bestSpeedrunMs >= 0
+        && data.bestSpeedrunMs <= 3600000
+        && data.bestSpeedrunCircuit is string
+        && data.bestSpeedrunCircuit.size() <= 40
+        && data.rankTitle is string
+        && data.rankTitle.size() <= 56
+        && data.isPublic is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    match /user_progress/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list: if false;
+      allow create: if isVerifiedUser()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && incoming().keys().hasAll([
+          'userId',
+          'learnerName',
+          'completedIslands',
+          'totalXp',
+          'bestExamScore',
+          'passedExamsCount',
+          'speedrunsCompleted',
+          'neutralizedAttacksCount',
+          'bestSpeedrunMs',
+          'selectedTrackId',
+          'createdAt',
+          'updatedAt'
+        ])
+        && incoming().keys().hasOnly([
+          'userId',
+          'learnerName',
+          'completedIslands',
+          'totalXp',
+          'bestExamScore',
+          'passedExamsCount',
+          'speedrunsCompleted',
+          'neutralizedAttacksCount',
+          'bestSpeedrunMs',
+          'selectedTrackId',
+          'createdAt',
+          'updatedAt'
+        ])
+        && isValidUserProgress(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser()
+        && isValidId(userId)
+        && isValidUserProgress(incoming())
+        && (
+          request.auth.uid == userId
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'learnerName',
+            'completedIslands',
+            'totalXp',
+            'bestExamScore',
+            'passedExamsCount',
+            'speedrunsCompleted',
+            'neutralizedAttacksCount',
+            'bestSpeedrunMs',
+            'selectedTrackId',
+            'updatedAt'
+          ])
+        );
+
+      allow delete: if isValidId(userId) && isOwner(userId);
+    }
+
+    match /leaderboard/{userId} {
+      allow get: if isValidId(userId) && (existing().isPublic == true || isOwner(userId));
+      allow list: if resource.data.isPublic == true;
+      allow create: if isVerifiedUser()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && incoming().keys().hasAll([
+          'userId',
+          'displayName',
+          'totalXp',
+          'completedIslandsCount',
+          'bestSpeedrunMs',
+          'bestSpeedrunCircuit',
+          'rankTitle',
+          'isPublic',
+          'createdAt',
+          'updatedAt'
+        ])
+        && incoming().keys().hasOnly([
+          'userId',
+          'displayName',
+          'totalXp',
+          'completedIslandsCount',
+          'bestSpeedrunMs',
+          'bestSpeedrunCircuit',
+          'rankTitle',
+          'isPublic',
+          'createdAt',
+          'updatedAt'
+        ])
+        && isValidLeaderboardEntry(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser()
+        && isValidId(userId)
+        && isValidLeaderboardEntry(incoming())
+        && (
+          request.auth.uid == userId
+          && incoming().userId == existing().userId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'displayName',
+            'totalXp',
+            'completedIslandsCount',
+            'bestSpeedrunMs',
+            'bestSpeedrunCircuit',
+            'rankTitle',
+            'isPublic',
+            'updatedAt'
+          ])
+        );
+
+      allow delete: if isValidId(userId) && isOwner(userId);
+    }
+  }
+}

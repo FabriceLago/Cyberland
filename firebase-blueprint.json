@@ -1,0 +1,157 @@
+{
+  "entities": {
+    "UserProgress": {
+      "title": "UserProgress",
+      "description": "Private cloud-synchronized learning progression for an authenticated Cyberland user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Authenticated Firebase UID owning this progression record."
+        },
+        "learnerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 48,
+          "description": "Learner display name chosen in Cyberland."
+        },
+        "completedIslands": {
+          "type": "array",
+          "description": "Bounded list of completed island IDs (max 25)."
+        },
+        "totalXp": {
+          "type": "number",
+          "description": "Total XP accumulated across islands, quizzes, debug tickets, and labs."
+        },
+        "bestExamScore": {
+          "type": "number",
+          "description": "Best mock exam score out of 20 (or -1 if none)."
+        },
+        "passedExamsCount": {
+          "type": "number",
+          "description": "Number of passed exams."
+        },
+        "speedrunsCompleted": {
+          "type": "number",
+          "description": "Number of completed Speedrun circuits."
+        },
+        "neutralizedAttacksCount": {
+          "type": "number",
+          "description": "Count of distinct real-time attacks neutralized."
+        },
+        "bestSpeedrunMs": {
+          "type": "number",
+          "description": "Fastest completed Speedrun time in milliseconds (0 if none)."
+        },
+        "selectedTrackId": {
+          "type": "string",
+          "enum": ["all", "network", "cloud-win", "soc-cyber"],
+          "description": "Active career track identifier."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "userId",
+        "learnerName",
+        "completedIslands",
+        "totalXp",
+        "bestExamScore",
+        "passedExamsCount",
+        "speedrunsCompleted",
+        "neutralizedAttacksCount",
+        "bestSpeedrunMs",
+        "selectedTrackId",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "LeaderboardEntry": {
+      "title": "LeaderboardEntry",
+      "description": "Public, PII-free Cyberland leaderboard entry for XP and Speedrun rankings.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Authenticated Firebase UID matching the document ID."
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 48,
+          "description": "Public learner pseudonym (no email or PII)."
+        },
+        "totalXp": {
+          "type": "number",
+          "description": "Total XP for global ranking."
+        },
+        "completedIslandsCount": {
+          "type": "number",
+          "description": "Number of islands completed (0 to 25)."
+        },
+        "bestSpeedrunMs": {
+          "type": "number",
+          "description": "Best Speedrun completion time in milliseconds (0 if not set)."
+        },
+        "bestSpeedrunCircuit": {
+          "type": "string",
+          "maxLength": 40,
+          "description": "Label of the circuit for the best Speedrun time."
+        },
+        "rankTitle": {
+          "type": "string",
+          "maxLength": 56,
+          "description": "Highest unlocked Cyberland expertise badge title."
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Explicit opt-in flag allowing listing on the online leaderboard."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "userId",
+        "displayName",
+        "totalXp",
+        "completedIslandsCount",
+        "bestSpeedrunMs",
+        "bestSpeedrunCircuit",
+        "rankTitle",
+        "isPublic",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/user_progress/{userId}": {
+      "schema": { "$ref": "#/entities/UserProgress" },
+      "description": "Owner-only cloud progress sync for authenticated learners."
+    },
+    "/leaderboard/{userId}": {
+      "schema": { "$ref": "#/entities/LeaderboardEntry" },
+      "description": "PII-free online XP and Speedrun leaderboard entries."
+    }
+  }
+}

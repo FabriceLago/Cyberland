@@ -43,9 +43,9 @@ const MISSIONS: NetworkMission[] = [
   {
     id: 'm1-pan',
     phase: 'Échelle géographique',
-    title: 'Mission 1 · Équipement de terrain de GemiBot',
+    title: 'Mission 1 · Équipement de terrain personnel',
     scenario:
-      "L'explorateur souhaite connecter sa montre connectée, ses écouteurs audio et un capteur météo de poche à sa tablette, le tout dans un rayon de 3 mètres autour de lui.",
+      "Vous souhaitez connecter votre montre connectée, vos écouteurs audio et un capteur météo de poche à votre tablette, le tout dans un rayon de 3 mètres.",
     rangeHint: 'Portée : 1 à 10 m · Technologies : Bluetooth / NFC / USB',
     constraint: 'Faible consommation électrique et connexion personnelle immédiate.',
     options: [

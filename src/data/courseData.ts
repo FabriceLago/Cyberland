@@ -77,6 +77,10 @@ export const ASSETS = {
   socCenterCover: '/src/assets/images/island_soc_center_cover_1795471963988.jpg',
   k8sHarborCover: '/src/assets/images/island_k8s_harbor_cover_1795471963544.jpg',
   vpnTunnelCover: '/src/assets/images/island_vpn_tunnel_cover_1795471963686.jpg',
+  serverFirewallCover: '/src/assets/images/server_firewall_cover_1795477193480.jpg',
+  vlanSwitchCover: '/src/assets/images/vlan_switch_cover_1795477239067.jpg',
+  ipv6TransitionCover: '/src/assets/images/ipv6_transition_cover_1795497511156.jpg',
+  apiOauthJwtCover: '/src/assets/images/api_oauth_jwt_cover_1795497510237.jpg',
 };
 
 export interface CareerTrack {
@@ -87,36 +91,119 @@ export interface CareerTrack {
   islandIds: number[];
 }
 
+export interface AnalystLearningPhase {
+  id: string;
+  phaseNumber: number;
+  title: string;
+  subtitle: string;
+  analystGoal: string;
+  islandIds: number[];
+}
+
+export const ANALYST_LEARNING_PHASES: AnalystLearningPhase[] = [
+  {
+    id: 'phase-1-foundations',
+    phaseNumber: 1,
+    title: 'Palier 1 · Fondations Réseau & Protocoles',
+    subtitle: 'Comprendre comment circule un paquet avant d’analyser ou défendre un réseau',
+    analystGoal: 'Lire une topologie, situer une couche OSI, résoudre IP/DNS et distinguer TCP/UDP.',
+    islandIds: [1, 7, 8, 2, 21, 3],
+  },
+  {
+    id: 'phase-2-systems-segmentation',
+    phaseNumber: 2,
+    title: 'Palier 2 · Systèmes, Cloisonnement & Identité',
+    subtitle: 'Maîtriser l’architecture réelle d’entreprise que l’analyste doit protéger',
+    analystGoal: 'Comprendre VLAN 802.1Q, VPN/NAT, durcissement Linux/DMZ et authentification Active Directory.',
+    islandIds: [20, 18, 19, 15],
+  },
+  {
+    id: 'phase-3-crypto-threats-api',
+    phaseNumber: 3,
+    title: 'Palier 3 · Cryptographie, Menaces & Sécurité API',
+    subtitle: 'Reconnaître les vecteurs d’attaque actuels et valider les mécanismes de confiance',
+    analystGoal: 'Auditer TLS/hachage, repérer le phishing/Zero Trust et détecter les failles OAuth2/JWT.',
+    islandIds: [11, 10, 22],
+  },
+  {
+    id: 'phase-4-cloud-modern-infra',
+    phaseNumber: 4,
+    title: 'Palier 4 · Cloud, Conteneurs & Résilience',
+    subtitle: 'Sécuriser et superviser les infrastructures Cloud-native modernes',
+    analystGoal: 'Évaluer les responsabilités IaaS/PaaS/SaaS, Docker, Kubernetes, CI/CD et la continuité.',
+    islandIds: [4, 9, 17, 12, 5, 6],
+  },
+  {
+    id: 'phase-5-investigation-soc',
+    phaseNumber: 5,
+    title: 'Palier 5 · Investigation, Journaux & Réponse SOC',
+    subtitle: 'Passer en conditions opérationnelles : capturer, corréler, trier et contenir',
+    analystGoal: 'Disséquer des captures .pcap, interroger les logs KQL et exécuter des playbooks SIEM/SOAR.',
+    islandIds: [13, 14, 16],
+  },
+];
+
+export const ANALYST_FULL_ORDER: number[] = ANALYST_LEARNING_PHASES.flatMap(
+  (phase) => phase.islandIds
+);
+
 export const CAREER_TRACKS: CareerTrack[] = [
   {
     id: 'all',
-    label: 'Tout l’archipel (18 îles)',
-    certificateTitle: 'Architecte Systèmes, Réseaux & Cloud',
-    description: 'Parcours complet couvrant réseaux, Cloud, conteneurs, observabilité et cybersécurité.',
-    islandIds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-  },
-  {
-    id: 'network',
-    label: 'Technicien Réseau',
-    certificateTitle: 'Spécialiste Technicien Réseau',
-    description: 'Câblage, IP/DNS, TCP/UDP, Types de réseaux, modèle OSI, Wireshark/tcpdump et VPN/NAT.',
-    islandIds: [1, 2, 3, 7, 8, 13, 18],
-  },
-  {
-    id: 'cloud-win',
-    label: 'Admin Windows & Cloud',
-    certificateTitle: 'Administrateur Windows, Cloud & Kubernetes',
-    description: 'Cloud IaaS/PaaS/SaaS, résilience Multi-AZ, FinOps, Docker, DevOps, Azure Monitor, Active Directory et Kubernetes.',
-    islandIds: [4, 5, 6, 9, 12, 14, 15, 17],
+    label: 'Cursus Complet Analyste (22 étapes)',
+    certificateTitle: 'Analyste Réseaux, Cloud & Cybersécurité',
+    description:
+      'Ordre recommandé en 5 paliers : fondations réseau, systèmes & AD, menaces/crypto/API, Cloud/K8s, puis investigation Wireshark, KQL et SOC/SIEM.',
+    islandIds: ANALYST_FULL_ORDER,
   },
   {
     id: 'soc-cyber',
-    label: 'Analyste Cybersécurité & SOC',
+    label: 'Analyste SOC & Cybersécurité',
     certificateTitle: 'Analyste Cybersécurité & Défense SOC',
-    description: 'Pare-feu, Zero Trust, cryptographie, analyse de paquets, Azure Monitor KQL, Active Directory, SIEM/SOAR et tunnels VPN.',
-    islandIds: [3, 10, 11, 13, 14, 15, 16, 18],
+    description:
+      'Progression ciblée analyste SOC : protocoles, cloisonnement VLAN/DMZ/AD, crypto & Zero Trust, API/JWT, puis Wireshark, KQL et triage SIEM/SOAR.',
+    islandIds: [1, 8, 2, 3, 20, 18, 19, 15, 11, 10, 22, 13, 14, 16],
+  },
+  {
+    id: 'network',
+    label: 'Analyste & Ingénieur Réseau',
+    certificateTitle: 'Spécialiste Analyse & Infrastructures Réseau',
+    description:
+      'Signaux, topologies, modèle OSI, IP/DNS, IPv6, TCP/UDP, VLAN/WPA3, VPN/NAT, pare-feu DMZ et capture Wireshark/tcpdump.',
+    islandIds: [1, 7, 8, 2, 21, 3, 20, 18, 19, 13],
+  },
+  {
+    id: 'cloud-win',
+    label: 'Analyste Cloud & Systèmes',
+    certificateTitle: 'Analyste Systèmes, Cloud & DevSecOps',
+    description:
+      'Durcissement Linux/DMZ, Active Directory, sécurité API/JWT, Cloud IaaS/PaaS/SaaS, Docker, Kubernetes, CI/CD, résilience et supervision Azure Monitor.',
+    islandIds: [19, 15, 22, 4, 9, 17, 12, 5, 6, 14],
   },
 ];
+
+export function getOrderedIslandsForTrack(trackId: CareerTrack['id']): IslandModule[] {
+  const track = CAREER_TRACKS.find((t) => t.id === trackId) ?? CAREER_TRACKS[0];
+  const byId = new Map(ISLANDS.map((island) => [island.id, island]));
+  return track.islandIds
+    .map((id) => byId.get(id))
+    .filter((island): island is IslandModule => Boolean(island));
+}
+
+export function getAnalystPhaseForIsland(islandId: number): AnalystLearningPhase | undefined {
+  return ANALYST_LEARNING_PHASES.find((phase) => phase.islandIds.includes(islandId));
+}
+
+export function getAnalystStepNumber(
+  islandId: number,
+  trackId: CareerTrack['id'] = 'all'
+): number {
+  const track = CAREER_TRACKS.find((t) => t.id === trackId) ?? CAREER_TRACKS[0];
+  const idx = track.islandIds.indexOf(islandId);
+  if (idx !== -1) return idx + 1;
+  const fullIdx = ANALYST_FULL_ORDER.indexOf(islandId);
+  return fullIdx !== -1 ? fullIdx + 1 : islandId;
+}
 
 export const ISLANDS: IslandModule[] = [
   {
@@ -154,7 +241,7 @@ export const ISLANDS: IslandModule[] = [
       },
     ],
     gemiBotHints: [
-      "Astuce de GemiBot : les ondes Wi-Fi détestent les gros rochers volcaniques ! Contournons-les au câble Ethernet.",
+      "Astuce terrain : les ondes Wi-Fi détestent les gros rochers volcaniques ! Contournons-les au câble Ethernet.",
       "N'oublie pas : pour qu'une cabane soit en ligne, elle doit pouvoir remonter jusqu'au Phare central, directement ou via une autre cabane reliée.",
       "Un message découpé en 4 paquets voyage plus vite et résiste mieux aux bouchons qu'une seule lettre géante !",
     ],
@@ -408,7 +495,7 @@ export const ISLANDS: IslandModule[] = [
       },
     ],
     gemiBotHints: [
-      "Retiens l'échelle de GemiBot : Poche (PAN) → Pièce/Bâtiment (LAN & WLAN) → Ville (MAN) → Planète (WAN) !",
+      "Retenez cette échelle : Poche (PAN) → Pièce/Bâtiment (LAN & WLAN) → Ville (MAN) → Planète (WAN) !",
       "Besoin de mobilité sans fil dans un bâtiment ? Choisis WLAN (Wi-Fi). Besoin de débit fixe ultra-stable ? Choisis LAN (Ethernet).",
       "Si un ingénieur travaille depuis un Wi-Fi public et veut rejoindre un réseau privé interne, pense aussitôt au tunnel chiffré VPN !",
     ],
@@ -865,6 +952,170 @@ export const ISLANDS: IslandModule[] = [
     ],
     mapPosition: { x: 76, y: 82 },
   },
+  {
+    id: 19,
+    slug: 'creer-serveur-configurer-pare-feu',
+    title: '19. Créer un Serveur, le Configurer & Placer un Pare-feu',
+    subtitle: 'Provisioning Linux/VPS, durcissement SSH, Reverse Proxy Nginx HTTPS, architecture DMZ & règles UFW',
+    category: 'Systèmes & Sécurité',
+    duration: '16 min',
+    xpReward: 340,
+    badgeTitle: 'Bâtisseur de Serveurs & Pare-feu',
+    badgeDescription: 'A créé un serveur sécurisé, positionné une DMZ entre deux pare-feux et configuré les règles UFW.',
+    videoTitle: 'Création serveur, configuration Nginx/SSH & placement Pare-feu DMZ en animation',
+    videoDuration: '2 min 20',
+    gameTitle: 'Déploie & Blinde ton Serveur',
+    notions: ['Provisioning Serveur (VPS / VM)', 'Durcissement SSH & sudo', 'Reverse Proxy Nginx & HTTPS', 'Placement Pare-feu, DMZ & UFW'],
+    summary:
+      'De la création d’une machine serveur vierge jusqu’à sa mise en production sécurisée : apprenez en animation comment choisir l’OS, sécuriser SSH, configurer Nginx en HTTPS, placer stratégiquement le pare-feu en architecture DMZ et appliquer la règle « Tout bloquer par défaut » avec UFW.',
+    keyTakeaways: [
+      {
+        term: 'Création & OS Serveur (LTS)',
+        detail: 'On déploie sur un serveur physique ou une VM/VPS Cloud avec un OS stable à support long (Ubuntu Server LTS / Debian) et une adresse IP statique.',
+      },
+      {
+        term: 'Durcissement SSH dès la 1re minute',
+        detail: 'Créer un utilisateur non-root avec sudo, authentifier par clé SSH Ed25519 et désactiver PermitRootLogin et les mots de passe dans /etc/ssh/sshd_config.',
+      },
+      {
+        term: 'Où placer le Pare-feu ? (DMZ)',
+        detail: 'En défense en profondeur : Internet → Pare-feu Périmétrique (FW1) → Zone DMZ (Serveur Web Nginx) → Pare-feu Interne (FW2) → Réseau Privé (Base de données).',
+      },
+      {
+        term: 'Politique UFW « Deny by Default »',
+        detail: 'Toujours commencer par ufw default deny incoming, puis n’ouvrir que 443/tcp (HTTPS), 80/tcp (redirection) et 22/tcp restreint à votre IP admin ou VPN.',
+      },
+    ],
+    gemiBotHints: [
+      'Règle d’or du pare-feu : bloquez TOUT le trafic entrant par défaut (ufw default deny incoming) puis n’ouvrez que les ports strictement nécessaires.',
+      'Ne placez jamais une base de données (ports 3306 / 5432) dans la DMZ ni exposée sur Internet : elle doit rester derrière le pare-feu interne.',
+      'Activez toujours la règle SSH avant de lancer « ufw enable », sinon vous risquez de vous enfermer hors de votre propre serveur !',
+    ],
+    mapPosition: { x: 89, y: 76 },
+  },
+  {
+    id: 20,
+    slug: 'switching-vlans-wifi-wpa3',
+    title: '20. Switching, VLANs (802.1Q) & Wi-Fi Entreprise (WPA3)',
+    subtitle: 'Segmentation L2 par VLAN, ports Access vs Trunk 802.1Q, routage inter-VLAN, Wi-Fi WPA3-Enterprise (802.1X/RADIUS) & isolation invités',
+    category: 'Réseaux avancés',
+    duration: '15 min',
+    xpReward: 340,
+    badgeTitle: 'Architecte VLAN & Wi-Fi',
+    badgeDescription: 'A segmenté le campus en 4 VLANs 802.1Q, sécurisé le Wi-Fi en WPA3-Enterprise RADIUS et déployé les ACL inter-VLAN.',
+    videoTitle: 'Commutation L2, étiquetage VLAN 802.1Q, Trunk & Wi-Fi WPA3-Enterprise en animation',
+    videoDuration: '2 min 10',
+    gameTitle: 'Segmente le Campus Cyberland',
+    notions: ['Switch L2 & table CAM/MAC', 'VLANs & étiquette IEEE 802.1Q', 'Port Access vs Trunk & Inter-VLAN', 'Wi-Fi WPA3-Enterprise (802.1X/RADIUS)'],
+    summary:
+      'Un seul réseau plat expose toute l’entreprise au premier poste infecté. Apprenez à découper un switch en VLANs isolés grâce à la norme 802.1Q, à relier vos commutateurs par des liens Trunk et à déployer un Wi-Fi d’entreprise WPA3-Enterprise avec portail invités isolé.',
+    keyTakeaways: [
+      {
+        term: 'VLAN (Virtual LAN)',
+        detail: 'Découpe logiquement un même switch physique en plusieurs réseaux indépendants (Direction, Employés, Invités, Serveurs) pour contenir les diffusions et les attaques.',
+      },
+      {
+        term: 'Access vs Trunk (IEEE 802.1Q)',
+        detail: 'Un port Access relie un poste final à un unique VLAN. Un port Trunk transporte plusieurs VLANs sur un seul câble en ajoutant une étiquette 802.1Q (4 octets) contenant le VLAN ID.',
+      },
+      {
+        term: 'Routage Inter-VLAN & ACL',
+        detail: 'Deux VLANs ne communiquent pas entre eux sans routeur L3 (Router-on-a-Stick ou Switch L3) contrôlé par des listes ACL strictes.',
+      },
+      {
+        term: 'Wi-Fi WPA3-Enterprise (802.1X/RADIUS)',
+        detail: 'Chaque employé s’authentifie avec ses propres identifiants ou certificat via un serveur RADIUS (révocation instantanée), tandis que les visiteurs restent isolés sur un VLAN Invités.',
+      },
+    ],
+    gemiBotHints: [
+      'Un câble entre un PC et un switch est toujours un port Access ; un câble entre un switch et un routeur (ou deux switchs) transportant plusieurs VLANs est un port Trunk 802.1Q.',
+      'Ne partagez jamais un mot de passe Wi-Fi unique (PSK) en entreprise : si un employé part, tout le monde devrait changer la clé. Utilisez WPA3-Enterprise + RADIUS.',
+      'Les visiteurs sur le Wi-Fi Invités (VLAN 30) doivent sortir vers Internet mais être strictement bloqués vers le VLAN Serveurs (VLAN 99).',
+    ],
+    mapPosition: { x: 64, y: 86 },
+  },
+  {
+    id: 21,
+    slug: 'ipv6-transition-dual-stack',
+    title: '21. IPv6 & Transition IPv4 / IPv6',
+    subtitle: 'Adressage 128 bits hexadécimal, compression :: (RFC 5952), SLAAC / NDP, préfixes fe80:: et migration Dual-Stack',
+    category: 'Réseaux avancés',
+    duration: '14 min',
+    xpReward: 340,
+    badgeTitle: 'Pionnier IPv6',
+    badgeDescription: 'A compressé des adresses 128 bits, classé les préfixes IPv6 et orchestré une transition Dual-Stack sans coupure.',
+    videoTitle: 'Épuisement IPv4, anatomie 128 bits IPv6, SLAAC & Dual-Stack en animation',
+    videoDuration: '2 min 00',
+    gameTitle: "Migre l'Archipel vers IPv6",
+    notions: ['Pénurie IPv4 vs 128 bits IPv6', 'Compression :: (RFC 5952)', 'SLAAC, NDP & Link-Local fe80::', 'Transition Dual-Stack & DNS AAAA'],
+    summary:
+      'Avec 4,3 milliards d’adresses seulement, IPv4 est saturé. Découvrez comment IPv6 débloque 340 sextillions d’adresses sur 128 bits, simplifie l’auto-configuration avec SLAAC et s’intègre en douceur grâce au Dual-Stack et aux enregistrements DNS AAAA.',
+    keyTakeaways: [
+      {
+        term: 'Adressage 128 bits (8 blocs Hex)',
+        detail: 'Une adresse IPv6 comporte 8 groupes de 4 caractères hexadécimaux séparés par « : », soit 2¹²⁸ adresses possibles — adieu la pénurie !',
+      },
+      {
+        term: 'Règles de compression (RFC 5952)',
+        detail: 'Supprimer les zéros en tête de chaque bloc (0db8 → db8) et remplacer la plus longue suite de blocs 0000 par « :: » une seule fois par adresse.',
+      },
+      {
+        term: 'Préfixes essentiels & SLAAC',
+        detail: '::1 (Loopback), fe80::/10 (Link-Local auto-configuré), fc00::/7 (ULA privé) et 2000::/3 (Unicast Global). SLAAC permet aux hôtes de s’auto-adresser via les annonces routeur (NDP).',
+      },
+      {
+        term: 'Dual-Stack & DNS AAAA',
+        detail: 'La stratégie de transition standard consiste à faire tourner IPv4 et IPv6 en parallèle (Dual-Stack) avec des enregistrements DNS A (IPv4) et AAAA (IPv6).',
+      },
+    ],
+    gemiBotHints: [
+      'Attention : le raccourci « :: » ne peut apparaître qu’une seule fois dans une adresse IPv6, sinon on ne saurait plus combien de groupes de zéros il remplace.',
+      'Ne supprimez jamais les zéros à droite d’un bloc : fe80 reste fe80, jamais fe8 !',
+      'En DNS, un enregistrement A renvoie une IPv4 (32 bits) et un enregistrement AAAA (quad-A) renvoie une IPv6 (128 bits).',
+    ],
+    mapPosition: { x: 52, y: 88 },
+  },
+  {
+    id: 22,
+    slug: 'securite-api-oauth2-jwt',
+    title: '22. Sécurité API, OAuth 2.0 & JWT',
+    subtitle: 'Flux Authorization Code + PKCE, anatomie & signature JWT (RS256/JWKS), défense OWASP API Top 10 (IDOR/BOLA, Rate Limit)',
+    category: 'Systèmes & Sécurité',
+    duration: '15 min',
+    xpReward: 350,
+    badgeTitle: 'Gardien des API & Jetons',
+    badgeDescription: 'A sécurisé un flux OAuth 2.0 + PKCE, bloqué un JWT falsifié alg:none et protégé une passerelle API contre IDOR.',
+    videoTitle: 'OAuth 2.0 PKCE, signature JWT RS256 et défenses OWASP API en animation',
+    videoDuration: '2 min 05',
+    gameTitle: 'Blinde la Passerelle API Cyberland',
+    notions: ['OAuth 2.0 & OpenID Connect (PKCE)', 'Anatomie JWT (Header · Payload · Signature)', 'Attaque alg:none & vérification JWKS', 'Défense OWASP API (IDOR / BOLA & Rate Limit)'],
+    summary:
+      'Les applications modernes reposent sur des API REST/GraphQL protégées par des jetons. Apprenez à déployer OAuth 2.0 avec PKCE, à comprendre pourquoi un JWT n’est pas chiffré mais signé, et à bloquer les failles critiques comme IDOR/BOLA.',
+    keyTakeaways: [
+      {
+        term: 'OAuth 2.0 + PKCE (OIDC)',
+        detail: 'OAuth 2.0 gère l’autorisation (scopes) et OpenID Connect l’identité. Le flux Authorization Code + PKCE protège les applications Web/Mobile sans exposer de secret client.',
+      },
+      {
+        term: 'JWT : Signé, PAS chiffré',
+        detail: 'Un JSON Web Token comprend 3 parties Base64URL (Header.Payload.Signature). Tout le monde peut lire le Payload : n’y mettez jamais de mot de passe et vérifiez toujours la signature RS256/ES256.',
+      },
+      {
+        term: 'Access Token court + Refresh Token rotatif',
+        detail: 'Limitez l’Access Token à 10–15 min et stockez le Refresh Token dans un cookie HttpOnly/Secure avec rotation à chaque usage pour limiter l’impact d’un vol.',
+      },
+      {
+        term: 'Protection IDOR / BOLA & Rate Limiting',
+        detail: 'Faille n°1 OWASP API : vérifiez côté serveur que la ressource /orders/{id} appartient bien à jwt.sub, et appliquez un Rate Limiting (HTTP 429) sur chaque endpoint.',
+      },
+    ],
+    gemiBotHints: [
+      'Un JWT standard est encodé en Base64URL : n’importe qui peut le décoder en 1 seconde. Sa sécurité repose uniquement sur la vérification serveur de sa signature cryptographique.',
+      'Rejetez toujours l’algorithme « none » et imposez une liste blanche stricte (ex. RS256 ou EdDSA) dans votre middleware JWT.',
+      'Authentifié ≠ Autorisé : vérifier que le JWT est valide ne suffit pas, il faut aussi vérifier que l’utilisateur est bien propriétaire de la ressource demandée (anti-IDOR).',
+    ],
+    mapPosition: { x: 40, y: 84 },
+  },
 ];
 
 export interface GlossaryTerm {
@@ -1011,7 +1262,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     islandId: 7,
     category: 'Types de réseaux',
     definition: 'Réseau personnel très courte portée (1 à 10 m) reliant les appareils autour d’un individu.',
-    example: 'Écouteurs Bluetooth et capteur météo reliés à la tablette de GemiBot.',
+    example: 'Écouteurs Bluetooth et capteur météo reliés à votre tablette.',
   },
   {
     id: 'wlan',
@@ -1228,6 +1479,94 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     category: 'Réseaux avancés',
     definition: 'Le PAT traduit plusieurs IP privées derrière une IP publique via des ports éphémères ; le pare-feu Stateful suit la table d’états des sessions.',
     example: '192.168.1.10 → 203.0.113.5:51001 et trafic retour HTTPS autorisé automatiquement.',
+  },
+  {
+    id: 'dmz',
+    term: 'DMZ (Zone Démilitarisée)',
+    islandId: 19,
+    category: 'Systèmes & Sécurité',
+    definition: 'Sous-réseau tampon isolé entre un pare-feu périmétrique (FW1) et un pare-feu interne (FW2) hébergeant les serveurs exposés à Internet.',
+    example: 'Serveur Web Nginx en DMZ, tandis que PostgreSQL reste protégé dans le réseau privé derrière FW2.',
+  },
+  {
+    id: 'nginx-proxy',
+    term: 'Reverse Proxy (Nginx) & TLS',
+    islandId: 19,
+    category: 'Systèmes & Sécurité',
+    definition: 'Serveur frontal recevant les requêtes HTTPS (:443) des clients pour les relayer vers l’application écoutant en local (127.0.0.1).',
+    example: 'Nginx termine TLS Let’s Encrypt et transmet le trafic vers Node.js sur 127.0.0.1:3000.',
+  },
+  {
+    id: 'ufw-firewall',
+    term: 'UFW & Politique Deny-by-Default',
+    islandId: 19,
+    category: 'Systèmes & Sécurité',
+    definition: 'Interface simplifiée du pare-feu Linux (nftables/iptables) appliquant le principe « tout bloquer en entrée sauf exceptions explicites ».',
+    example: 'ufw default deny incoming && ufw allow 443/tcp && ufw allow from 198.51.100.10 to any port 22.',
+  },
+  {
+    id: 'ssh-ed25519',
+    term: 'Durcissement SSH (Clé Ed25519)',
+    islandId: 19,
+    category: 'Systèmes & Sécurité',
+    definition: 'Sécurisation de l’accès distant Linux en désactivant la connexion root et les mots de passe au profit de clés asymétriques Ed25519.',
+    example: 'PermitRootLogin no et PasswordAuthentication no dans /etc/ssh/sshd_config.',
+  },
+  {
+    id: 'vlan-8021q',
+    term: 'VLAN & Étiquette IEEE 802.1Q',
+    islandId: 20,
+    category: 'Réseaux avancés',
+    definition: 'Segmentation logique d’un switch L2 en réseaux isolés ; la norme 802.1Q insère un tag de 4 octets (VLAN ID 1–4094) dans la trame Ethernet.',
+    example: 'VLAN 10 Direction, VLAN 20 Employés, VLAN 30 Invités et VLAN 99 Serveurs.',
+  },
+  {
+    id: 'trunk-access',
+    term: 'Port Access vs Port Trunk',
+    islandId: 20,
+    category: 'Réseaux avancés',
+    definition: 'Un port Access appartient à un seul VLAN pour un poste final ; un port Trunk transporte plusieurs VLANs étiquetés entre switchs ou vers un routeur.',
+    example: 'Gi0/1 en mode Trunk vers le routeur cœur pour le routage Inter-VLAN.',
+  },
+  {
+    id: 'wpa3-radius',
+    term: 'Wi-Fi WPA3-Enterprise (802.1X / RADIUS)',
+    islandId: 20,
+    category: 'Réseaux avancés',
+    definition: 'Standard Wi-Fi d’entreprise authentifiant chaque utilisateur individuellement auprès d’un serveur RADIUS avec chiffrement renforcé SAE/GCMP.',
+    example: 'Révocation immédiate de l’accès Wi-Fi d’un salarié partant sans modifier le mot de passe des autres.',
+  },
+  {
+    id: 'ipv6-slaac',
+    term: 'IPv6 (128 bits) & SLAAC',
+    islandId: 21,
+    category: 'Réseaux avancés',
+    definition: 'Protocole IP de nouvelle génération offrant 2¹²⁸ adresses ; SLAAC permet aux équipements de s’auto-attribuer une IPv6 globale sans serveur DHCPv6.',
+    example: '2001:db8:42::10/64 auto-configurée à partir du préfixe annoncé par le routeur (NDP).',
+  },
+  {
+    id: 'dual-stack-aaaa',
+    term: 'Dual-Stack & DNS AAAA',
+    islandId: 21,
+    category: 'Réseaux avancés',
+    definition: 'Cohabitation simultanée d’IPv4 et d’IPv6 sur les mêmes serveurs et routeurs, publiée dans le DNS via les enregistrements A (IPv4) et AAAA (IPv6).',
+    example: 'portal.cyberland.gem résout à la fois vers 203.0.113.10 (A) et 2001:db8::10 (AAAA).',
+  },
+  {
+    id: 'oauth2-pkce',
+    term: 'OAuth 2.0 + PKCE & OpenID Connect',
+    islandId: 22,
+    category: 'Systèmes & Sécurité',
+    definition: 'Standards modernes d’autorisation et d’authentification déléguées utilisant un défi cryptographique PKCE (SHA-256) pour sécuriser les apps Web/Mobile.',
+    example: 'Connexion « Se connecter avec Google » sans jamais transmettre son mot de passe à l’application tierce.',
+  },
+  {
+    id: 'jwt-idor',
+    term: 'JWT (RS256) & Faille IDOR / BOLA',
+    islandId: 22,
+    category: 'Systèmes & Sécurité',
+    definition: 'Jeton signé en 3 parties (Header.Payload.Signature) ; IDOR/BOLA survient lorsqu’une API ne vérifie pas que la ressource demandée appartient bien à jwt.sub.',
+    example: 'Rejeter GET /api/invoices/43 par l’utilisateur #42 avec un code HTTP 403 Forbidden.',
   },
 ];
 
@@ -1776,6 +2115,176 @@ export const DEBUG_TICKETS: DebugTicket[] = [
       'En Full-Tunnel, toute la vidéo des télétravailleurs fait un aller-retour inutile par le siège. Le Split-Tunneling libère instantanément la passerelle VPN tout en gardant le trafic interne chiffré.',
     xpReward: 40,
   },
+  {
+    id: 'dbg-17',
+    title: 'Ticket #301 — Impossible de se reconnecter en SSH après activation d’UFW',
+    islandRef: 'Île 19 · Serveur & Pare-feu',
+    symptom:
+      'Un administrateur vient de configurer son nouveau serveur Ubuntu LTS et d’exécuter « ufw default deny incoming && ufw enable ». Depuis, toutes ses connexions SSH expirent.',
+    tools: [
+      {
+        id: 'ufw-status',
+        label: 'console KVM : sudo ufw status verbose',
+        output: 'Status: active · Default: deny (incoming), allow (outgoing) · Règles actives : 443/tcp ALLOW.',
+      },
+      {
+        id: 'sshd-check',
+        label: 'systemctl status ssh',
+        output: 'active (running) — écoute sur 0.0.0.0:22.',
+      },
+      {
+        id: 'nginx-check',
+        label: 'curl -I https://srv.cyberland.gem',
+        output: 'HTTP/2 200 OK (le site HTTPS répond normalement).',
+      },
+    ],
+    options: [
+      'Désactiver définitivement le pare-feu UFW',
+      'Ajouter une règle explicite autorisant le port 22/tcp depuis l’IP d’administration/VPN (ufw allow from <IP_ADMIN> to any port 22) via la console de secours',
+      'Réinstaller complètement le système Linux',
+      'Ouvrir les ports 23 (Telnet) et 5432 (PostgreSQL) sur Internet',
+    ],
+    correctIndex: 1,
+    explanation:
+      'Avec « ufw default deny incoming », le port 22 est bloqué tant qu’aucune règle d’autorisation SSH n’est ajoutée. Toujours autoriser SSH (restreint à votre IP admin ou VPN) avant d’activer UFW !',
+    xpReward: 45,
+  },
+  {
+    id: 'dbg-18',
+    title: 'Ticket #314 — Audit Nmap : base PostgreSQL exposée sur Internet',
+    islandRef: 'Île 19 · Architecture DMZ & Pare-feu',
+    symptom:
+      'Un scan externe sur le serveur de production révèle que le port 5432/tcp (PostgreSQL) répond directement depuis Internet et subit des centaines de tentatives de connexion.',
+    tools: [
+      {
+        id: 'nmap-ext',
+        label: 'nmap -sV 203.0.113.42',
+        output: '443/tcp OPEN nginx · 5432/tcp OPEN postgresql 16.2 · 22/tcp FILTERED.',
+      },
+      {
+        id: 'pg-conf',
+        label: 'vérifier postgresql.conf & architecture',
+        output: 'listen_addresses = "*" · Serveur Web et BDD sur le même segment public sans pare-feu interne FW2.',
+      },
+      {
+        id: 'ufw-rules',
+        label: 'ufw status numbered',
+        output: '[1] 443/tcp ALLOW Anywhere · [2] 5432/tcp ALLOW Anywhere.',
+      },
+    ],
+    options: [
+      'Supprimer la règle 5432/tcp publique, déplacer PostgreSQL derrière le pare-feu interne (ou lier sur 127.0.0.1 / réseau privé) et n’autoriser que le serveur Web',
+      'Changer le port 5432 en port 5433 tout en le laissant ouvert à tout Internet',
+      'Fermer le port 443 HTTPS des utilisateurs',
+      'Désactiver Nginx et exposer Node.js en HTTP clair',
+    ],
+    correctIndex: 0,
+    explanation:
+      'Une base de données ne doit jamais être exposée directement sur Internet. Il faut révoquer la règle publique 5432, isoler la BDD dans le réseau privé (derrière FW2) ou sur l’interface locale 127.0.0.1.',
+    xpReward: 45,
+  },
+  {
+    id: 'dbg-19',
+    title: 'Ticket #327 — Les postes du VLAN 20 n’obtiennent plus d’IP après changement de switch',
+    islandRef: 'Île 20 · Switching & VLAN 802.1Q',
+    symptom:
+      'Suite au remplacement d’un switch d’étage, les postes du VLAN 10 fonctionnent, mais aucun poste du VLAN 20 (Employés) ne parvient à joindre la passerelle ou Internet.',
+    tools: [
+      {
+        id: 'sw-uplink',
+        label: 'show interfaces Gi0/1 switchport',
+        output: 'Interface Gi0/1 (vers Routeur cœur) : Mode = ACCESS · Access Mode VLAN = 10 (Direction).',
+      },
+      {
+        id: 'sw-ports',
+        label: 'show vlan brief',
+        output: 'VLAN 10 : Fa0/1-4 · VLAN 20 : Fa0/5-12 (ports actifs).',
+      },
+      {
+        id: 'rtr-sub',
+        label: 'show ip interface brief (Routeur)',
+        output: 'Gi0/0.10 (10.10.0.1) UP · Gi0/0.20 (10.20.0.1) UP (encapsulation dot1Q 20).',
+      },
+    ],
+    options: [
+      'Passer l’interface uplink Gi0/1 en mode Trunk 802.1Q autorisant les VLANs 10 et 20',
+      'Mettre tous les employés dans le VLAN 10 de la Direction',
+      'Remplacer le câble Ethernet par du Bluetooth',
+      'Supprimer les sous-interfaces du routeur',
+    ],
+    correctIndex: 0,
+    explanation:
+      'Le port uplink Gi0/1 étant resté en mode Access VLAN 10, les trames du VLAN 20 ne peuvent jamais traverser vers le routeur. Le passer en Trunk 802.1Q rétablit immédiatement le trafic multi-VLAN.',
+    xpReward: 45,
+  },
+  {
+    id: 'dbg-20',
+    title: 'Ticket #342 — Clients mobiles 5G IPv6-only incapables de joindre le portail',
+    islandRef: 'Île 21 · IPv6 & Dual-Stack',
+    symptom:
+      'Le serveur web dispose bien d’une adresse IPv6 active sur son interface réseau, mais les utilisateurs sur réseau mobile IPv6 reçoivent « Hôte introuvable ».',
+    tools: [
+      {
+        id: 'dig-aaaa',
+        label: 'dig AAAA portal.cyberland.gem',
+        output: 'ANSWER: 0 (Aucun enregistrement AAAA configuré dans la zone DNS — seul l’enregistrement A IPv4 existe).',
+      },
+      {
+        id: 'ip-addr6',
+        label: 'ip -6 addr show eth0',
+        output: 'inet6 2001:db8:42::10/64 scope global · Nginx écoute sur [::]:443.',
+      },
+      {
+        id: 'ping6',
+        label: 'ping -6 2001:db8:42::10',
+        output: '64 bytes from 2001:db8:42::10: time=9.4 ms (joignable directement).',
+      },
+    ],
+    options: [
+      'Ajouter l’enregistrement DNS AAAA pointant vers 2001:db8:42::10 tout en conservant l’enregistrement A (Dual-Stack)',
+      'Supprimer l’enregistrement DNS A pour couper l’accès IPv4',
+      'Désactiver IPv6 sur les téléphones 5G des clients',
+      'Remplacer 2001:db8:42::10 par l’adresse locale fe80::1 dans le DNS public',
+    ],
+    correctIndex: 0,
+    explanation:
+      'Le serveur répond en IPv6, mais le DNS ne publiait que l’enregistrement A (IPv4). Ajouter l’enregistrement AAAA active instantanément le Dual-Stack pour les clients IPv6 et IPv4.',
+    xpReward: 45,
+  },
+  {
+    id: 'dbg-21',
+    title: 'Ticket #355 — Fuite de factures clients via modification d’ID dans l’API',
+    islandRef: 'Île 22 · Sécurité API & JWT',
+    symptom:
+      'Un chercheur en sécurité signale qu’en étant connecté avec un compte standard, changer GET /api/invoices/101 en /api/invoices/102 retourne la facture d’un autre client.',
+    tools: [
+      {
+        id: 'api-code',
+        label: 'inspecter route /api/invoices/:id',
+        output: 'const inv = await db.findInvoice(req.params.id); return res.json(inv); // Aucun contrôle inv.userId === req.user.sub !',
+      },
+      {
+        id: 'jwt-ok',
+        label: 'vérifier middleware JWT',
+        output: 'Signature RS256 valide · req.user.sub = "usr_101".',
+      },
+      {
+        id: 'tls-api',
+        label: 'contrôle HTTPS',
+        output: 'TLS 1.3 actif sur port 443.',
+      },
+    ],
+    options: [
+      'Corriger la faille IDOR/BOLA en vérifiant côté serveur que inv.userId === req.user.sub (ou rôle admin) avant de renvoyer la facture, sinon répondre 403 Forbidden',
+      'Encoder l’ID 102 en Base64 dans l’URL sans ajouter de contrôle serveur',
+      'Passer le JWT en algorithme alg:none',
+      'Désactiver le pare-feu UFW',
+    ],
+    correctIndex: 0,
+    explanation:
+      'La validation du JWT prouve uniquement QUI est l’utilisateur (authentification), pas CE QU’IL a le droit de voir (autorisation). Vérifier la propriété de chaque ressource côté serveur corrige la faille IDOR/BOLA.',
+    xpReward: 45,
+  },
 ];
 
 export const STORYBOARDS: VideoStoryboard[] = [
@@ -1803,9 +2312,9 @@ export const STORYBOARDS: VideoStoryboard[] = [
         shot: 2,
         timecode: '0:18 – 0:38',
         visual:
-          "GemiBot surgit avec un faisceau laser bleu et découpe proprement la lettre en 4 petites enveloppes numérotées : 1/4, 2/4, 3/4 et 4/4, portant chacune l'adresse du destinataire.",
+          "Un découpage lumineux divise proprement la lettre en 4 petites enveloppes numérotées : 1/4, 2/4, 3/4 et 4/4, portant chacune l'adresse du destinataire.",
         voiceover:
-          "La solution d'Internet ? Le découpage en paquets ! GemiBot divise le message en petits morceaux numérotés, faciles et rapides à transporter.",
+          "La solution d'Internet ? Le découpage en paquets ! Le réseau divise le message en petits morceaux numérotés, faciles et rapides à transporter.",
         animationNote: "Transition Rive interactive : clic possible pour inspecter l'en-tête d'un paquet.",
       },
       {
@@ -1910,7 +2419,7 @@ export const STORYBOARDS: VideoStoryboard[] = [
         shot: 3,
         timecode: '1:00 – 1:45',
         visual:
-          "Une barque pirate munie d'une longue-vue observe les colis passer. GemiBot verrouille un cadenas doré (HTTPS / Port 443) : le texte « Mot de passe » devient un code indéchiffrable « #9fA!2xQ ». Le pont-levis du pare-feu se referme devant un intrus sur le port 23.",
+          "Un observateur indiscret tente de lire les colis qui passent. Un cadenas doré (HTTPS / Port 443) verrouille le flux : le texte « Mot de passe » devient un code indéchiffrable « #9fA!2xQ ». Le pare-feu referme le port 23.",
         voiceover:
           "Enfin, pour protéger nos échanges, le chiffrement HTTPS brouille les messages aux yeux des pirates, tandis que le pare-feu contrôle chaque port à l'entrée de la forteresse.",
         animationNote: "Effet de brouillage typographique en direct sur la chaîne de caractères.",
@@ -2070,7 +2579,7 @@ export const STORYBOARDS: VideoStoryboard[] = [
         shot: 2,
         timecode: '0:30 – 1:10',
         visual:
-          "GemiBot empile 4 conteneurs standardisés bleus et verts (Docker) sur un même pont (Noyau partagé), face à 4 lourdes maisons flottantes (VM).",
+          "4 conteneurs standardisés bleus et verts (Docker) s'empilent proprement sur un même pont (Noyau partagé), face à 4 lourdes machines virtuelles complètes (VM).",
         voiceover:
           "Avec Docker, chaque microservice voyage dans son propre conteneur léger et hermétique : démarrage en une seconde et zéro conflit de dépendances.",
         animationNote: "Comparateur animé RAM (64 Mo vs 2048 Mo) et temps de démarrage.",
@@ -2101,7 +2610,7 @@ export const STORYBOARDS: VideoStoryboard[] = [
         shot: 1,
         timecode: '0:00 – 0:35',
         visual:
-          "Un perroquet déguisé en facteur tend une lettre urgente « cyber-land-securite.xyz ». GemiBot passe une loupe qui dévoile l'extension piège.",
+          "Un message urgent suspect « cyber-land-securite.xyz » arrive en boîte de réception. Une loupe passe sur l'adresse et révèle immédiatement l'extension piège.",
         voiceover:
           "La plupart des cyberattaques visent d'abord les humains ! Le phishing joue sur la peur ou l'urgence et maquille les noms de domaine.",
         animationNote: "Loupe interactive mettant en rouge le domaine usurpé.",
@@ -2141,7 +2650,7 @@ export const STORYBOARDS: VideoStoryboard[] = [
         shot: 1,
         timecode: '0:00 – 0:35',
         visual:
-          "Au phare de Cyberland, GemiBot verrouille un coffre avec une clé dorée (AES) puis dépose une lettre dans une boîte aux lettres publique dont seul le destinataire détient la clé privée.",
+          "Au phare de Cyberland, un coffre se verrouille avec une clé symétrique dorée (AES), puis une lettre est déposée dans une boîte aux lettres publique dont seul le destinataire détient la clé privée.",
         voiceover:
           "Le chiffrement symétrique est ultra-rapide avec une seule clé, tandis que l'asymétrique sépare la clé publique pour verrouiller et la clé privée pour ouvrir !",
         animationNote: "Split-screen comparant clé unique AES et duo Clé Publique / Clé Privée.",
@@ -2199,7 +2708,7 @@ export const STORYBOARDS: VideoStoryboard[] = [
         shot: 3,
         timecode: '1:10 – 1:45',
         visual:
-          "Une alerte rouge clignote sur Green : GemiBot appuie sur le levier « Rollback » et 100 % des visiteurs reviennent en 1 seconde sur Blue !",
+          "Une alerte rouge clignote sur Green : un clic sur la commande « Rollback » ramène 100 % des visiteurs en 1 seconde sur Blue !",
         voiceover:
           "Et si un bug survient malgré tout ? Un clic sur Rollback ramène instantanément tout l'archipel sur la version saine précédente !",
         animationNote: "Bascule instantanée vers Blue avec rétablissement à 0 % d'erreur.",
@@ -2453,13 +2962,13 @@ export const PRODUCTION_TOOLS = [
     category: 'Animations vectorielles interactives',
     tools: 'LottieFiles & Rive',
     usage:
-      'Idéal pour intégrer GemiBot, les paquets numérotés ou des schémas contrôlés au clic directement dans votre LMS ou site web sans alourdir la page.',
+      'Idéal pour intégrer les paquets numérotés ou des schémas contrôlés au clic directement dans votre LMS ou site web sans alourdir la page.',
   },
   {
     category: 'Vidéos explicatives (Motion Design)',
     tools: 'Canva, Vyond, Powtoon ou Animaker',
     usage:
-      'Adapté aux capsules narratives de 1 min 30 à 2 min en style « archipel illustré » avec voix-off synchronisée et personnages récurrents.',
+      'Adapté aux capsules pédagogiques de 1 min 30 à 2 min en style « archipel illustré » avec voix-off synchronisée et schémas animés.',
   },
   {
     category: 'Vidéo interactive & Quiz intégrés',
@@ -3111,6 +3620,90 @@ export const AUDIENCE_QUIZZES: Record<AudienceLevel, QuizQuestion[]> = {
       correctIndex: 0,
       explanation:
         'Le Split-Tunneling évite l’engorgement du siège (hairpinning) en ne chiffrant dans le tunnel VPN que les accès aux ressources internes privées.',
+    },
+    {
+      id: 'rec-17',
+      islandRef: 'Île 19 · Création & Durcissement Serveur',
+      question: "Juste après avoir provisionné un serveur Linux Ubuntu LTS sur Internet, quelle combinaison d'actions sécurise immédiatement l'accès SSH ?",
+      options: [
+        'Créer un compte sudo dédié, déployer une clé SSH Ed25519 et configurer PermitRootLogin no + PasswordAuthentication no',
+        'Garder le compte root avec un mot de passe simple pour dépanner vite',
+        'Désactiver SSH et installer Telnet sur le port 23',
+        'Ouvrir tous les ports TCP de 1 à 65535 dans UFW',
+      ],
+      correctIndex: 0,
+      explanation:
+        'La connexion root directe et l’authentification par mot de passe sont la cible n°1 des bots. Un compte non-root avec sudo + clé Ed25519 élimine les attaques par force brute.',
+    },
+    {
+      id: 'rec-18',
+      islandRef: 'Île 19 · Architecture DMZ & UFW',
+      question: "Dans une architecture DMZ professionnelle, pourquoi place-t-on le serveur Web entre un pare-feu périmétrique (FW1) et un pare-feu interne (FW2) ?",
+      options: [
+        'Pour isoler le serveur exposé : même s’il est compromis, FW2 protège la base de données et le LAN interne en profondeur',
+        'Pour permettre à Internet d’accéder directement au port 5432 de PostgreSQL',
+        'Pour supprimer totalement le chiffrement HTTPS',
+        'Uniquement pour augmenter la latence du réseau',
+      ],
+      correctIndex: 0,
+      explanation:
+        'La DMZ limite le rayon d’action d’une compromission web : FW1 n’autorise que HTTPS (443) vers la DMZ, et FW2 n’autorise que les flux strictement nécessaires entre le serveur Web et la base privée.',
+    },
+    {
+      id: 'rec-19',
+      islandRef: 'Île 20 · Switching & VLAN 802.1Q',
+      question: "Quelle est la différence fondamentale entre un port Switch « Access » et un port « Trunk 802.1Q » ?",
+      options: [
+        'Access relie un terminal dans un seul VLAN ; Trunk transporte plusieurs VLANs simultanément sur un seul câble en ajoutant un tag 802.1Q',
+        'Access fonctionne uniquement en Wi-Fi et Trunk uniquement en Bluetooth',
+        'Trunk désactive le chiffrement TLS sur Internet',
+        'Access sert à relier deux datacenters distants de 1 000 km',
+      ],
+      correctIndex: 0,
+      explanation:
+        'Un port Access appartient à un VLAN unique (PC, imprimante, serveur), tandis qu’un port Trunk étiquette chaque trame avec son numéro de VLAN (IEEE 802.1Q) pour traverser les liens inter-switchs ou vers un routeur.',
+    },
+    {
+      id: 'rec-20',
+      islandRef: 'Île 20 · Wi-Fi Entreprise WPA3',
+      question: "Pourquoi déployer WPA3-Enterprise (802.1X / RADIUS) plutôt que WPA2-Personal (PSK) dans une entreprise de 200 collaborateurs ?",
+      options: [
+        'Chaque utilisateur dispose d’identifiants/certificats individuels révocables immédiatement sans devoir changer la clé Wi-Fi sur 200 appareils',
+        'Parce que WPA3-Enterprise supprime le besoin de points d’accès Wi-Fi',
+        'Pour autoriser les visiteurs à accéder aux serveurs de comptabilité',
+        'Parce que WPA2-Personal ne supporte pas le protocole IP',
+      ],
+      correctIndex: 0,
+      explanation:
+        'Avec 802.1X/RADIUS, chaque collaborateur s’authentifie avec son propre compte (Active Directory / certificat). En cas de départ ou de vol d’ordinateur, on révoque uniquement son accès.',
+    },
+    {
+      id: 'rec-21',
+      islandRef: 'Île 21 · IPv6 & Transition',
+      question: "Quelle est la forme compressée valide (RFC 5952) de l'adresse IPv6 2001:0db8:0000:0000:0000:0000:0042:0001 ?",
+      options: [
+        '2001:db8::42:1',
+        '2001::db8::42:1',
+        '2001:db8::0042:0001',
+        '201:db8::42:1',
+      ],
+      correctIndex: 0,
+      explanation:
+        'On retire les zéros non significatifs au début de chaque bloc (0db8 → db8, 0042 → 42, 0001 → 1) et on remplace la séquence contiguë de zéros par un unique « :: ».',
+    },
+    {
+      id: 'rec-22',
+      islandRef: 'Île 22 · Sécurité API & JWT',
+      question: "Pourquoi ne doit-on JAMAIS stocker un secret ou un mot de passe dans le Payload d'un jeton JWT standard (JWS) ?",
+      options: [
+        'Parce que le Payload est simplement encodé en Base64URL (lisible en clair par n’importe qui) : un JWS garantit l’intégrité via sa signature, pas la confidentialité',
+        'Parce qu’un JWT ne supporte que les nombres entiers',
+        'Parce que le Payload est automatiquement supprimé par HTTPS',
+        'Parce que OAuth 2.0 interdit le format JSON',
+      ],
+      correctIndex: 0,
+      explanation:
+        'Un JWT standard (JWS) est signé pour empêcher toute falsification, mais son contenu Base64URL est lisible sans clé par quiconque possède le jeton.',
     },
   ],
 };

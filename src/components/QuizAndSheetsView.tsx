@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, XCircle, RotateCcw, Download, Check, Award, Briefcase, Timer, Users } from 'lucide-react';
+import { CheckCircle2, XCircle, RotateCcw, Download, Check, Award, Briefcase, Timer, Users, GraduationCap } from 'lucide-react';
 import {
   ACTIVITY_SHEETS,
   AUDIENCE_QUIZZES,
@@ -8,11 +8,13 @@ import {
 import { CaseStudiesPanel } from './CaseStudiesPanel';
 import { ExamBlancPanel } from './ExamBlancPanel';
 import { ClassroomDuelPanel } from './ClassroomDuelPanel';
+import { InterviewAndCertPrepPanel } from './InterviewAndCertPrepPanel';
 import { playClick, playError, playSuccess, playVictory } from '../utils/sound';
 
 interface QuizAndSheetsViewProps {
-  initialSection?: 'quiz' | 'cases' | 'exam' | 'duel';
+  initialSection?: 'quiz' | 'cases' | 'exam' | 'duel' | 'certif';
   bestExamScore: number | null;
+  completedIslands?: number[];
   onAwardQuizXp: (xpGain: number) => void;
   onAwardCaseXp?: (xpGain: number) => void;
   onFinishExam?: (scoreOutOf20: number) => void;
@@ -22,12 +24,13 @@ interface QuizAndSheetsViewProps {
 export const QuizAndSheetsView: React.FC<QuizAndSheetsViewProps> = ({
   initialSection = 'quiz',
   bestExamScore,
+  completedIslands = [],
   onAwardQuizXp,
   onAwardCaseXp,
   onFinishExam,
   onOpenIsland,
 }) => {
-  const [section, setSection] = useState<'quiz' | 'cases' | 'exam' | 'duel'>(initialSection);
+  const [section, setSection] = useState<'quiz' | 'cases' | 'exam' | 'duel' | 'certif'>(initialSection);
   const [audience, setAudience] = useState<AudienceLevel>('collegiens');
 
   useEffect(() => {
@@ -263,6 +266,21 @@ export const QuizAndSheetsView: React.FC<QuizAndSheetsViewProps> = ({
               <Users className="w-3.5 h-3.5" />
               Défi Classe (2 Équipes)
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                playClick();
+                setSection('certif');
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
+                section === 'certif'
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              <GraduationCap className="w-3.5 h-3.5" />
+              Certifs &amp; Entretien
+            </button>
           </div>
 
           {section === 'quiz' && (
@@ -308,6 +326,12 @@ export const QuizAndSheetsView: React.FC<QuizAndSheetsViewProps> = ({
         />
       ) : section === 'duel' ? (
         <ClassroomDuelPanel />
+      ) : section === 'certif' ? (
+        <InterviewAndCertPrepPanel
+          completedIslands={completedIslands}
+          onOpenIsland={onOpenIsland}
+          onAwardXp={(xp) => onAwardCaseXp?.(xp)}
+        />
       ) : (
       /* Main Split: Quiz on left (7 cols), Activity Sheet on right (5 cols) */
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

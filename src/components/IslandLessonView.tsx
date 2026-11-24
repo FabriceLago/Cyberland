@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, CheckCircle2, Film, Gamepad2, BookOpen, Star } from 'lucide-react';
-import { ASSETS, ISLANDS, IslandModule } from '../data/courseData';
+import {
+  ASSETS,
+  CareerTrack,
+  getAnalystPhaseForIsland,
+  getOrderedIslandsForTrack,
+  IslandModule,
+} from '../data/courseData';
 import { GemiBotGuide } from './GemiBotGuide';
 import { IslandAnimationPlayer } from './IslandAnimationPlayer';
 import { Island1SignalsGame } from './games/Island1SignalsGame';
@@ -21,10 +27,15 @@ import { Island15ActiveDirectoryGame } from './games/Island15ActiveDirectoryGame
 import { Island16SocSiemGame } from './games/Island16SocSiemGame';
 import { Island17KubernetesGame } from './games/Island17KubernetesGame';
 import { Island18VpnNatGame } from './games/Island18VpnNatGame';
+import { Island19ServerFirewallGame } from './games/Island19ServerFirewallGame';
+import { Island20VlanSwitchGame } from './games/Island20VlanSwitchGame';
+import { Island21Ipv6Game } from './games/Island21Ipv6Game';
+import { Island22ApiJwtGame } from './games/Island22ApiJwtGame';
 import { playClick } from '../utils/sound';
 
 interface IslandLessonViewProps {
   island: IslandModule;
+  selectedTrackId?: CareerTrack['id'];
   completedIslands: number[];
   starsByIsland: Record<number, number>;
   defaultSpeechRate: number;
@@ -37,6 +48,7 @@ type ModuleTab = 'animation' | 'game' | 'notions';
 
 export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
   island,
+  selectedTrackId = 'all',
   completedIslands,
   starsByIsland,
   defaultSpeechRate,
@@ -54,8 +66,19 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
 
   const isCompleted = completedIslands.includes(island.id);
   const earnedStars = starsByIsland[island.id] ?? 0;
-  const prevIsland = ISLANDS.find((i) => i.id === island.id - 1);
-  const nextIsland = ISLANDS.find((i) => i.id === island.id + 1);
+
+  const trackOrdered = getOrderedIslandsForTrack(selectedTrackId);
+  const orderedIslands = trackOrdered.some((i) => i.id === island.id)
+    ? trackOrdered
+    : getOrderedIslandsForTrack('all');
+  const currentIdx = orderedIslands.findIndex((i) => i.id === island.id);
+  const prevIsland = currentIdx > 0 ? orderedIslands[currentIdx - 1] : undefined;
+  const nextIsland =
+    currentIdx >= 0 && currentIdx < orderedIslands.length - 1
+      ? orderedIslands[currentIdx + 1]
+      : undefined;
+  const currentPhase = getAnalystPhaseForIsland(island.id);
+  const stepNumber = currentIdx >= 0 ? currentIdx + 1 : 1;
 
   const coverImage =
     island.id === 1
@@ -84,6 +107,14 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
       ? ASSETS.k8sHarborCover
       : island.id === 18
       ? ASSETS.vpnTunnelCover
+      : island.id === 19
+      ? ASSETS.serverFirewallCover
+      : island.id === 20
+      ? ASSETS.vlanSwitchCover
+      : island.id === 21
+      ? ASSETS.ipv6TransitionCover
+      : island.id === 22
+      ? ASSETS.apiOauthJwtCover
       : island.id >= 4
       ? ASSETS.cloudSummitCover
       : null;
@@ -105,24 +136,25 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
         </button>
 
         <div className="flex items-center gap-1 p-1 bg-slate-200/70 dark:bg-slate-800 rounded-lg overflow-x-auto">
-          {ISLANDS.map((item) => {
+          {orderedIslands.map((item, idx) => {
             const done = completedIslands.includes(item.id);
             const active = item.id === island.id;
             return (
               <button
                 key={item.id}
                 type="button"
+                title={item.title}
                 onClick={() => {
                   playClick();
                   onSelectIsland(item.id);
                 }}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap shrink-0 ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap shrink-0 tabular-nums ${
                   active
                     ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                 }`}
               >
-                Île {item.id} {done ? '✓' : ''}
+                Étape {idx + 1} {done ? '✓' : ''}
               </button>
             );
           })}
@@ -133,6 +165,11 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
       <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
         <div className={`${coverImage && !coverErr ? 'lg:col-span-8' : 'lg:col-span-12'} space-y-3`}>
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <span className="font-mono font-semibold text-sky-700 dark:text-sky-400 tabular-nums">
+              {currentPhase ? `Palier ${currentPhase.phaseNumber} · ` : ''}Étape {stepNumber}/
+              {orderedIslands.length}
+            </span>
+            <span aria-hidden="true">·</span>
             <span>{island.category}</span>
             <span aria-hidden="true">·</span>
             <span>{island.duration}</span>
@@ -343,6 +380,30 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
             <Island18VpnNatGame
               isCompleted={isCompleted}
               onComplete={(stars) => onCompleteIsland(18, stars)}
+            />
+          )}
+          {island.id === 19 && (
+            <Island19ServerFirewallGame
+              isCompleted={isCompleted}
+              onComplete={(stars) => onCompleteIsland(19, stars)}
+            />
+          )}
+          {island.id === 20 && (
+            <Island20VlanSwitchGame
+              isCompleted={isCompleted}
+              onComplete={(stars) => onCompleteIsland(20, stars)}
+            />
+          )}
+          {island.id === 21 && (
+            <Island21Ipv6Game
+              isCompleted={isCompleted}
+              onComplete={(stars) => onCompleteIsland(21, stars)}
+            />
+          )}
+          {island.id === 22 && (
+            <Island22ApiJwtGame
+              isCompleted={isCompleted}
+              onComplete={(stars) => onCompleteIsland(22, stars)}
             />
           )}
         </div>
@@ -709,6 +770,175 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
               </div>
             </div>
           )}
+
+          {island.id === 19 && (
+            <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
+                Checklist Réelle : Créer, Configurer un Serveur &amp; Placer le Pare-feu
+              </h3>
+              <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                    <tr>
+                      <th className="py-3 px-4 font-semibold">Étape</th>
+                      <th className="py-3 px-4 font-semibold">Commande / Configuration clé</th>
+                      <th className="py-3 px-4 font-semibold">Objectif sécurité &amp; architecture</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                    <tr>
+                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">1. Créer &amp; mettre à jour</td>
+                      <td className="py-3 px-4 font-mono">sudo apt update &amp;&amp; sudo apt upgrade -y</td>
+                      <td className="py-3 px-4">Partir sur un OS Linux LTS (Ubuntu/Debian) à jour avec IP statique</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">2. Durcir SSH</td>
+                      <td className="py-3 px-4 font-mono">PermitRootLogin no · PasswordAuthentication no</td>
+                      <td className="py-3 px-4">Compte sudo dédié + clé SSH Ed25519 (bloque les attaques force brute)</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">3. Reverse Proxy &amp; TLS</td>
+                      <td className="py-3 px-4 font-mono">nginx + certbot --nginx</td>
+                      <td className="py-3 px-4">Chiffrement HTTPS sur :443 tout en gardant l&apos;application sur 127.0.0.1</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">4. Placer le Pare-feu</td>
+                      <td className="py-3 px-4 font-mono">WAN → FW1 → DMZ (Web) → FW2 → LAN (DB)</td>
+                      <td className="py-3 px-4">Isoler les serveurs exposés en DMZ et protéger la base de données derrière FW2</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">5. Filtrer avec UFW</td>
+                      <td className="py-3 px-4 font-mono">ufw default deny incoming &amp;&amp; ufw allow 443/tcp</td>
+                      <td className="py-3 px-4">Tout bloquer par défaut ; restreindre SSH (22) à l&apos;IP admin ou VPN ; bloquer 5432/23</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {island.id === 20 && (
+            <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
+                Mémo Technique : Switch Access vs Trunk 802.1Q &amp; Wi-Fi Entreprise
+              </h3>
+              <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                    <tr>
+                      <th className="py-3 px-4 font-semibold">Notion</th>
+                      <th className="py-3 px-4 font-semibold">Fonctionnement / Protocole</th>
+                      <th className="py-3 px-4 font-semibold">Usage recommandé en entreprise</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                    <tr>
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">Port Access</td>
+                      <td className="py-3 px-4">1 seul VLAN · Trames non taguées</td>
+                      <td className="py-3 px-4">PC, téléphones IP, imprimantes, serveurs individuels</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">Port Trunk 802.1Q</td>
+                      <td className="py-3 px-4">Multi-VLAN · Tag 4 octets (VLAN ID)</td>
+                      <td className="py-3 px-4">Liaison Switch-à-Switch, Switch-à-Routeur ou borne multi-SSID</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">WPA3-Enterprise</td>
+                      <td className="py-3 px-4">IEEE 802.1X + serveur RADIUS</td>
+                      <td className="py-3 px-4">Wi-Fi collaborateurs avec comptes/certificats révocables</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">VLAN Invités + ACL</td>
+                      <td className="py-3 px-4">Client Isolation + DENY vers LAN interne</td>
+                      <td className="py-3 px-4">Sortie Internet visiteurs sans aucun accès aux serveurs internes</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {island.id === 21 && (
+            <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
+                Mémo IPv6 : Préfixes essentiels &amp; Equivalence IPv4
+              </h3>
+              <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                    <tr>
+                      <th className="py-3 px-4 font-semibold">Préfixe IPv6</th>
+                      <th className="py-3 px-4 font-semibold">Équivalent IPv4</th>
+                      <th className="py-3 px-4 font-semibold">Rôle réseau</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                    <tr>
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">::1/128</td>
+                      <td className="py-3 px-4 font-mono">127.0.0.1</td>
+                      <td className="py-3 px-4">Loopback (bouclage local de la machine)</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">fe80::/10</td>
+                      <td className="py-3 px-4 font-mono">169.254.0.0/16</td>
+                      <td className="py-3 px-4">Link-Local (obligatoire sur chaque interface, NDP/SLAAC)</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">fc00::/7 (fd00::/8)</td>
+                      <td className="py-3 px-4 font-mono">10.0.0.0/8 · 192.168/16</td>
+                      <td className="py-3 px-4">ULA (Unique Local Address — réseau privé interne)</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">2000::/3</td>
+                      <td className="py-3 px-4 font-mono">IPv4 publiques</td>
+                      <td className="py-3 px-4">Unicast Globales routables sur Internet (DNS AAAA)</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {island.id === 22 && (
+            <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
+                Checklist OWASP API Security, OAuth 2.0 &amp; JWT
+              </h3>
+              <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                    <tr>
+                      <th className="py-3 px-4 font-semibold">Contrôle</th>
+                      <th className="py-3 px-4 font-semibold">Bonne pratique</th>
+                      <th className="py-3 px-4 font-semibold">Attaque bloquée</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                    <tr>
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">OAuth 2.0 + PKCE</td>
+                      <td className="py-3 px-4">Authorization Code + code_challenge SHA-256</td>
+                      <td className="py-3 px-4">Vol de code d&apos;autorisation (SPA / Mobile)</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">Signature JWT RS256</td>
+                      <td className="py-3 px-4">Liste blanche d&apos;algorithmes + vérification JWKS/exp</td>
+                      <td className="py-3 px-4">Falsification alg:none &amp; rejeu de jeton expiré</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">Contrôle IDOR/BOLA</td>
+                      <td className="py-3 px-4">Vérifier resource.ownerId === jwt.sub côté serveur</td>
+                      <td className="py-3 px-4">Accès aux données d&apos;un autre client par changement d&apos;ID</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">Rate Limiting</td>
+                      <td className="py-3 px-4">Quotas par IP/utilisateur (HTTP 429) + Refresh HttpOnly</td>
+                      <td className="py-3 px-4">Scraping massif, credential stuffing &amp; vol XSS</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </section>
       )}
 
@@ -730,7 +960,7 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
             className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            {prevIsland.title}
+            Étape {stepNumber - 1} : {prevIsland.title.replace(/^\d+\.\s*/, '')}
           </button>
         ) : (
           <div />
@@ -745,7 +975,7 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
             }}
             className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-sky-700 hover:bg-sky-800 rounded-lg transition-colors"
           >
-            Île suivante : {nextIsland.title}
+            Étape {stepNumber + 1} : {nextIsland.title.replace(/^\d+\.\s*/, '')}
             <ArrowRight className="w-4 h-4" />
           </button>
         ) : (

@@ -1,9 +1,19 @@
 import React, { useState } from 'react';
 import { Download, Film, PauseCircle, Check } from 'lucide-react';
 import { PRODUCTION_TOOLS, STORYBOARDS } from '../data/courseData';
+import { AppRoute } from './Header';
+import { DemoVideoPlayer } from './DemoVideoPlayer';
 import { playClick, playSuccess } from '../utils/sound';
 
-export const StoryboardsView: React.FC = () => {
+interface StoryboardsViewProps {
+  onNavigate?: (route: AppRoute) => void;
+  onOpenIsland?: (islandId: number) => void;
+}
+
+export const StoryboardsView: React.FC<StoryboardsViewProps> = ({
+  onNavigate,
+  onOpenIsland,
+}) => {
   const [selectedId, setSelectedId] = useState<number>(1);
   const [exported, setExported] = useState(false);
 
@@ -68,6 +78,9 @@ export const StoryboardsView: React.FC = () => {
           {exported ? 'Script téléchargé' : 'Télécharger ce script (.md)'}
         </button>
       </div>
+
+      {/* 5-Minute Interactive Platform Walkthrough Video */}
+      <DemoVideoPlayer onNavigate={onNavigate} onOpenIsland={onOpenIsland} />
 
       {/* Video selector */}
       <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-200/80 dark:bg-slate-800 rounded-lg w-fit">
