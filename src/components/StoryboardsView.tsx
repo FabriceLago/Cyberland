@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { Download, Film, PauseCircle, Check } from 'lucide-react';
-import { PRODUCTION_TOOLS, STORYBOARDS } from '../data/courseData';
+import {
+  getNumberedCourseName,
+  getShortNumberedCourseName,
+  PRODUCTION_TOOLS,
+  STORYBOARDS,
+} from '../data/courseData';
 import { AppRoute } from './Header';
 import { DemoVideoPlayer } from './DemoVideoPlayer';
 import { playClick, playSuccess } from '../utils/sound';
@@ -92,13 +97,13 @@ export const StoryboardsView: React.FC<StoryboardsViewProps> = ({
               playClick();
               setSelectedId(sb.islandId);
             }}
-            className={`px-3.5 py-2 text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${
+            className={`px-3.5 py-2 text-xs font-semibold rounded-md transition-colors whitespace-nowrap tabular-nums ${
               selectedId === sb.islandId
                 ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
             }`}
           >
-            Vidéo Île {sb.islandId} · {sb.duration}
+            {getShortNumberedCourseName(sb.islandId)} · {sb.duration}
           </button>
         ))}
       </div>
@@ -108,7 +113,8 @@ export const StoryboardsView: React.FC<StoryboardsViewProps> = ({
         <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-slate-100">
-              {activeStoryboard.title}
+              {getNumberedCourseName(activeStoryboard.islandId)} —{' '}
+              {activeStoryboard.title.replace(/^Île \d+\s*—\s*/, '')}
             </h2>
             <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5">
               Concept clé : {activeStoryboard.targetConcept}

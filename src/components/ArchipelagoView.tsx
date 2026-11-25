@@ -36,7 +36,13 @@ import {
   Briefcase,
   Check,
   Clock,
+  Code2,
+  Crosshair,
+  FileSearch,
+  Globe2,
+  MailCheck,
   Pencil,
+  TerminalSquare,
 } from 'lucide-react';
 import {
   ANALYST_LEARNING_PHASES,
@@ -45,7 +51,10 @@ import {
   CareerTrack,
   getAnalystPhaseForIsland,
   getAnalystStepNumber,
+  getNumberedCourseName,
   getOrderedIslandsForTrack,
+  getShortCourseName,
+  getShortNumberedCourseName,
   ISLANDS,
 } from '../data/courseData';
 import { getHighestUnlockedBadge } from '../data/expertiseBadges';
@@ -193,7 +202,6 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
     visibleIslands.find((i) => !completedIslands.includes(i.id)) ??
     visibleIslands[visibleIslands.length - 1] ??
     ISLANDS[0];
-  const nextStepNumber = getAnalystStepNumber(nextIsland.id, selectedTrackId);
   const totalPossibleXp = ISLANDS.reduce((acc, i) => acc + i.xpReward, 0);
   const totalStars = Object.values(starsByIsland).reduce((a, b) => a + b, 0);
   const maxStars = ISLANDS.length * 3;
@@ -202,7 +210,6 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
   const activeIslandInfo =
     ISLANDS.find((i) => i.id === hoveredIslandId) ?? nextIsland;
   const activeIslandPhase = getAnalystPhaseForIsland(activeIslandInfo.id);
-  const activeIslandStep = getAnalystStepNumber(activeIslandInfo.id, selectedTrackId);
 
   const groupedPhases = ANALYST_LEARNING_PHASES.map((phase) => {
     const phaseIslands = visibleIslands.filter((island) => phase.islandIds.includes(island.id));
@@ -246,6 +253,24 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
     [17, 7],
     [13, 18],
     [18, 7],
+    [11, 23],
+    [23, 14],
+    [14, 24],
+    [24, 16],
+    [15, 25],
+    [25, 8],
+    [8, 26],
+    [26, 22],
+    [3, 27],
+    [27, 5],
+    [4, 28],
+    [28, 2],
+    [15, 29],
+    [29, 3],
+    [27, 30],
+    [30, 13],
+    [12, 31],
+    [31, 9],
   ];
 
   const perfectStarsCount = Object.values(starsByIsland).filter((s) => s === 3).length;
@@ -260,14 +285,14 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
     {
       id: 'ach-green',
       title: 'Champion Green IT',
-      detail: 'Obtenir 3 étoiles sur l’Île 06 (Éco-Cloud & FinOps).',
+      detail: 'Obtenir 3 étoiles sur le cours Éco-Cloud & FinOps.',
       unlocked: (starsByIsland[6] ?? 0) === 3,
       progress: `${starsByIsland[6] ?? 0}/3 ★`,
     },
     {
       id: 'ach-cyber',
       title: 'Gardien Cyber & Anti-DDoS',
-      detail: 'Valider l’Île 10 (Zero Trust) ou repousser l’attaque Anti-DDoS.',
+      detail: 'Valider Phishing & Zero Trust ou repousser l’attaque Anti-DDoS.',
       unlocked: completedIslands.includes(10) || ddosWon,
       progress: completedIslands.includes(10) || ddosWon ? 'Validé' : '0/1',
     },
@@ -406,14 +431,14 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
                 playClick();
                 onSelectIsland(nextIsland.id);
               }}
-              className="inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-white bg-sky-700 hover:bg-sky-800 rounded-lg transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-white bg-sky-700 hover:bg-sky-800 rounded-lg transition-colors whitespace-nowrap tabular-nums"
             >
-              <Play className="w-4 h-4" />
+              <Play className="w-4 h-4 shrink-0" />
               {trackCompletedCount === 0
-                ? 'Démarrer · Étape 1'
+                ? `Démarrer : ${getShortNumberedCourseName(nextIsland, selectedTrackId)}`
                 : trackCompletedCount === visibleIslands.length
-                ? 'Revoir le Centre SOC & SIEM'
-                : `Continuer · Étape ${nextStepNumber}/${visibleIslands.length}`}
+                ? `Revoir : ${getShortNumberedCourseName(16, selectedTrackId)}`
+                : `Continuer : ${getShortNumberedCourseName(nextIsland, selectedTrackId)}`}
             </button>
             <button
               type="button"
@@ -454,15 +479,18 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
               >
                 <div className="flex items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
                   <span className="tabular-nums">
-                    {activeIslandPhase ? `Palier ${activeIslandPhase.phaseNumber} · ` : ''}Étape{' '}
-                    {activeIslandStep}/{visibleIslands.length}
+                    Cours {String(getAnalystStepNumber(activeIslandInfo.id, selectedTrackId)).padStart(2, '0')}/
+                    {visibleIslands.length} ·{' '}
+                    {activeIslandPhase
+                      ? activeIslandPhase.title.replace(/^Palier \d+\s*·\s*/, '')
+                      : activeIslandInfo.category}
                   </span>
                   <span className="font-mono tabular-nums text-sky-700 dark:text-sky-400 font-medium">
                     +{activeIslandInfo.xpReward} XP
                   </span>
                 </div>
                 <p className="font-display text-lg font-semibold text-slate-900 dark:text-slate-100">
-                  {activeIslandInfo.title.replace(/^\d+\.\s*/, '')}
+                  {getNumberedCourseName(activeIslandInfo, selectedTrackId)}
                 </p>
                 <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                   {activeIslandInfo.summary}
@@ -549,12 +577,13 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
             const done = completedIslands.includes(island.id);
             const inTrack = activeTrack.islandIds.includes(island.id);
             const isNext = nextIsland.id === island.id && !done;
-            const stepNum = getAnalystStepNumber(island.id, selectedTrackId);
+            const stepNum = String(getAnalystStepNumber(island.id, selectedTrackId)).padStart(2, '0');
+            const shortName = getShortCourseName(island);
             return (
               <button
                 key={island.id}
                 type="button"
-                title={`Étape ${stepNum} · ${island.title.replace(/^\d+\.\s*/, '')}`}
+                title={getNumberedCourseName(island, selectedTrackId)}
                 onMouseEnter={() => setHoveredIslandId(island.id)}
                 onFocus={() => setHoveredIslandId(island.id)}
                 onClick={() => {
@@ -565,21 +594,21 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
                   left: `${island.mapPosition.x}%`,
                   top: `${island.mapPosition.y}%`,
                 }}
-                className={`absolute -translate-x-1/2 -translate-y-1/2 group flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-left transition-all duration-150 hover:scale-105 focus-visible:scale-105 shadow-md ${
+                className={`absolute -translate-x-1/2 -translate-y-1/2 group flex items-center gap-1.5 px-2 py-1 rounded-lg border text-left transition-all duration-150 hover:scale-105 hover:z-20 focus-visible:scale-105 focus-visible:z-20 shadow-md ${
                   !inTrack
-                    ? 'opacity-35 bg-slate-900/75 border-white/20 text-white/80 hover:opacity-90'
+                    ? 'opacity-35 bg-slate-900/75 border-white/20 text-white/80 hover:opacity-95'
                     : done
                     ? 'bg-emerald-700 border-emerald-300 text-white'
                     : isNext
-                    ? 'bg-sky-700 border-white text-white'
+                    ? 'bg-sky-700 border-white text-white z-10'
                     : 'bg-slate-900/90 border-white/40 text-white hover:bg-slate-900'
                 }`}
               >
-                <span className="font-mono text-xs font-semibold tabular-nums">
-                  {done ? '✓' : String(stepNum).padStart(2, '0')}
+                <span className="font-mono text-[10px] sm:text-[11px] font-bold tabular-nums opacity-95 shrink-0">
+                  {done ? `✓ ${stepNum}` : stepNum}
                 </span>
-                <span className="text-[11px] font-semibold whitespace-nowrap hidden xl:inline">
-                  {island.title.replace(/^\d+\.\s*/, '')}
+                <span className="text-[10px] sm:text-[11px] font-semibold whitespace-nowrap max-w-[84px] xl:max-w-none truncate">
+                  {shortName}
                 </span>
               </button>
             );
@@ -793,9 +822,9 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
       <GemiBotGuide
         contextLabel="Pour bien démarrer"
         hints={[
-          "Bienvenue sur Cyberland ! Commencez sereinement par l'Île 1 pour voir comment circule un signal, puis avancez à votre rythme jusqu'au Cloud.",
-          "Pas besoin de tout mémoriser du premier coup : chaque île combine une courte animation commentée et un atelier pratique où l'erreur aide à comprendre.",
-          "Si vous préférez pratiquer tout de suite, ouvrez le simulateur de paquets pour suivre une requête de bout en bout.",
+          "Bienvenue sur Cyberland ! Commencez sereinement par Signaux & Paquets pour voir comment circule une trame, puis avancez à votre rythme jusqu'au Cloud et au SOC.",
+          "Pas besoin de tout mémoriser du premier coup : chaque cours combine une courte animation commentée et un atelier pratique où l'erreur aide à comprendre.",
+          "Si vous préférez pratiquer tout de suite, ouvrez le simulateur de paquets ou un lab temps réel (VPN, Serveur Linux) pour manipuler en direct.",
         ]}
       />
 
@@ -892,8 +921,8 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
           </p>
         </div>
 
-        {/* Interactive 5-Phase Analyst Roadmap Strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        {/* Interactive 6-Phase Analyst Roadmap Strip */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
           {groupedPhases.map((phase) => {
             const phasePct = Math.round((phase.doneCount / phase.islands.length) * 100);
             const isPhaseComplete = phase.doneCount === phase.islands.length;
@@ -986,7 +1015,6 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
                   {phase.islands.map((island, idx) => {
                     const isCompleted = completedIslands.includes(island.id);
                     const isRecommendedNext = !isCompleted && island.id === nextIsland.id;
-                    const stepNum = getAnalystStepNumber(island.id, selectedTrackId);
                     const stars = starsByIsland[island.id] ?? 0;
                     const IconComp =
                       island.id === 1
@@ -1023,6 +1051,26 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
                         ? Siren
                         : island.id === 17
                         ? Boxes
+                        : island.id === 19
+                        ? Server
+                        : island.id === 23
+                        ? MailCheck
+                        : island.id === 24
+                        ? Crosshair
+                        : island.id === 25
+                        ? FileSearch
+                        : island.id === 26
+                        ? Code2
+                        : island.id === 27
+                        ? KeyRound
+                        : island.id === 28
+                        ? Globe2
+                        : island.id === 29
+                        ? TerminalSquare
+                        : island.id === 30
+                        ? Server
+                        : island.id === 31
+                        ? FolderTree
                         : Lock;
 
                     return (
@@ -1045,10 +1093,10 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
                         <div className="space-y-3">
                           <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
                             <span className="tabular-nums">
-                              <strong className="font-mono text-sky-700 dark:text-sky-400">
-                                Étape {String(stepNum).padStart(2, '0')}
+                              <strong className="font-mono font-semibold text-sky-700 dark:text-sky-400">
+                                Cours {String(getAnalystStepNumber(island.id, selectedTrackId)).padStart(2, '0')}
                               </strong>{' '}
-                              · {island.duration} · +{island.xpReward} XP
+                              · {island.category} · {island.duration} · +{island.xpReward} XP
                             </span>
                             {isCompleted ? (
                               <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 dark:text-emerald-400">
@@ -1070,7 +1118,7 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
                               </span>
                             ) : isRecommendedNext ? (
                               <span className="text-[11px] font-semibold text-sky-700 dark:text-cyan-300">
-                                Prochaine étape
+                                Prochain cours
                               </span>
                             ) : (
                               <IconComp className="w-4 h-4 text-slate-400" />
@@ -1079,7 +1127,7 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
 
                           <div>
                             <h4 className="font-display text-xl font-bold text-slate-900 dark:text-slate-100">
-                              {island.title.replace(/^\d+\.\s*/, '')}
+                              {getNumberedCourseName(island, selectedTrackId)}
                             </h4>
                             <p className="text-sm font-medium text-sky-800 dark:text-sky-400 mt-0.5">
                               {island.subtitle}
@@ -1116,17 +1164,17 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
                             playClick();
                             onSelectIsland(island.id);
                           }}
-                          className={`w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors ${
+                          className={`w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors tabular-nums ${
                             isCompleted
                               ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700'
                               : 'bg-sky-700 text-white hover:bg-sky-800'
                           }`}
                         >
                           {isCompleted
-                            ? 'Revoir ce module'
+                            ? 'Revoir ce cours'
                             : isRecommendedNext
-                            ? `Démarrer l'étape ${stepNum}`
-                            : 'Ouvrir ce module'}
+                            ? `Démarrer : ${getShortNumberedCourseName(island, selectedTrackId)}`
+                            : 'Ouvrir ce cours'}
                           <ArrowRight className="w-4 h-4" />
                         </motion.button>
                       </motion.article>

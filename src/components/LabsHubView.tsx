@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   Activity,
@@ -7,17 +7,23 @@ import {
   CheckCircle2,
   CloudCog,
   CloudOff,
+  Code2,
   Container,
+  Crosshair,
   Database,
   FileKey2,
+  FileSearch,
   Flag,
   Flame,
+  FolderTree,
   Gauge,
   GitBranch,
   Globe,
+  Globe2,
   HardDrive,
   KeyRound,
   Lock,
+  MailCheck,
   MailWarning,
   MonitorCheck,
   Network,
@@ -25,6 +31,7 @@ import {
   Repeat2,
   Router,
   ScanSearch,
+  Server,
   ShieldAlert,
   Siren,
   Terminal,
@@ -57,11 +64,19 @@ import { CtfGuidedLab } from './labs/CtfGuidedLab';
 import { JwtTlsAuditorLab } from './labs/JwtTlsAuditorLab';
 import { DockerHardeningLab } from './labs/DockerHardeningLab';
 import { SocSurvivalLab } from './labs/SocSurvivalLab';
+import { VpnConfigLiveLab } from './labs/VpnConfigLiveLab';
+import { ServerConfigLiveLab } from './labs/ServerConfigLiveLab';
+import { ExpertAdvancedLiveLab } from './labs/ExpertAdvancedLiveLab';
+import { AdvancedLabId } from '../data/advancedCoursesData';
 import { CyberAttackId } from '../data/cyberAttackSimulations';
 import { EASE_SWISS, SPRING_SNAPPY } from './MotionPrimitives';
 import { playClick } from '../utils/sound';
 
+export type LabCategory = 'speedrun' | 'attacks' | 'tools';
+
 interface LabsHubViewProps {
+  initialCategory?: LabCategory;
+  initialLab?: LabTab;
   onWinDdosXp: () => void;
   onCompleteTerminalMissions?: () => void;
   onContainCrisis?: () => void;
@@ -77,9 +92,7 @@ interface LabsHubViewProps {
   onCompleteSpeedrun?: (result: SpeedrunCompletionResult) => void;
 }
 
-type LabCategory = 'speedrun' | 'attacks' | 'tools';
-
-type LabTab =
+export type LabTab =
   | CyberAttackId
   | 'ddos'
   | 'sqli'
@@ -102,7 +115,26 @@ type LabTab =
   | 'ctf'
   | 'survival'
   | 'jwttls'
-  | 'dockersec';
+  | 'dockersec'
+  | 'vpnconfig'
+  | 'serverconfig'
+  | AdvancedLabId;
+
+const ADVANCED_LAB_IDS: AdvancedLabId[] = [
+  'emailsec',
+  'sigmayara',
+  'dfir',
+  'iac',
+  'iamcloud',
+  'bgprouting',
+  'linuxadmin',
+  'winserver',
+  'admastery',
+];
+
+function isAdvancedLabId(id: LabTab): id is AdvancedLabId {
+  return (ADVANCED_LAB_IDS as string[]).includes(id);
+}
 
 const CYBER_ATTACK_IDS: CyberAttackId[] = [
   'xss',
@@ -120,6 +152,8 @@ function isCyberAttackId(id: LabTab): id is CyberAttackId {
 }
 
 export const LabsHubView: React.FC<LabsHubViewProps> = ({
+  initialCategory,
+  initialLab,
   onWinDdosXp,
   onCompleteTerminalMissions,
   onContainCrisis,
@@ -134,9 +168,18 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
   xpBoostRemainingSec = 0,
   onCompleteSpeedrun,
 }) => {
-  const [category, setCategory] = useState<LabCategory>('speedrun');
-  const [activeLab, setActiveLab] = useState<LabTab>('xss');
+  const [category, setCategory] = useState<LabCategory>(initialCategory ?? 'speedrun');
+  const [activeLab, setActiveLab] = useState<LabTab>(initialLab ?? 'xss');
   const [neutralizedAttacks, setNeutralizedAttacks] = useState<CyberAttackId[]>([]);
+
+  useEffect(() => {
+    if (initialCategory) {
+      setCategory(initialCategory);
+    }
+    if (initialLab) {
+      setActiveLab(initialLab);
+    }
+  }, [initialCategory, initialLab]);
 
   const attackTabs: { id: LabTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: 'xss', label: 'XSS & Cookie', icon: Bug },
@@ -152,6 +195,17 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
   ];
 
   const toolTabs: { id: LabTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: 'linuxadmin', label: 'Linux Live (Admin, Systemd & LVM)', icon: TerminalSquare },
+    { id: 'winserver', label: 'Windows Server Live (DNS/DHCP/SMB)', icon: Server },
+    { id: 'admastery', label: 'Active Directory Live (AD DS/GPO)', icon: FolderTree },
+    { id: 'serverconfig', label: 'Serveur Live (Création & Config)', icon: Server },
+    { id: 'vpnconfig', label: 'VPN Live (Création & Config)', icon: Lock },
+    { id: 'emailsec', label: 'P1 · Messagerie SPF/DKIM/DMARC', icon: MailCheck },
+    { id: 'sigmayara', label: 'P2 · Sigma, YARA & Hunting', icon: Crosshair },
+    { id: 'dfir', label: 'P3 · Forensics & DFIR', icon: FileSearch },
+    { id: 'iac', label: 'P4 · Terraform & Ansible (IaC)', icon: Code2 },
+    { id: 'iamcloud', label: 'P5 · IAM Cloud & Secrets', icon: KeyRound },
+    { id: 'bgprouting', label: 'P6 · OSPF, BGP, RPKI & SD-WAN', icon: Globe2 },
     { id: 'ctf', label: 'CTF Guidé (5 Flags)', icon: Flag },
     { id: 'survival', label: 'Survie SOC (Vagues)', icon: Flame },
     { id: 'jwttls', label: 'JWT & TLS X.509', icon: FileKey2 },
@@ -181,7 +235,7 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
     playClick();
     setCategory(nextCat);
     if (nextCat === 'attacks') setActiveLab('xss');
-    if (nextCat === 'tools') setActiveLab('ctf');
+    if (nextCat === 'tools') setActiveLab('serverconfig');
   };
 
   const handleNeutralize = (attackId: CyberAttackId) => {
@@ -198,7 +252,7 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-1.5">
             <p className="text-xs font-mono font-medium text-sky-700 dark:text-cyan-400">
-              30 ateliers tactiques · CTF · Survie SOC · {neutralizedAttacks.length} / {CYBER_ATTACK_IDS.length} attaques live neutralisées cette session
+              41 ateliers tactiques · Linux · Windows Server · Active Directory · 6 Labs Expert · {neutralizedAttacks.length} / {CYBER_ATTACK_IDS.length} attaques live neutralisées cette session
             </p>
             <h1 className="font-display text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100">
               Laboratoires Réseaux, Cloud &amp; Cyber
@@ -225,7 +279,7 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
                 },
                 {
                   id: 'tools',
-                  label: 'CTF & Outils (20)',
+                  label: 'CTF & Outils (31)',
                   icon: Wrench,
                   activeBg: 'bg-sky-600 dark:bg-cyan-500',
                   activeText: 'text-white dark:text-slate-950',
@@ -339,6 +393,19 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
             />
           )}
 
+          {category !== 'speedrun' && activeLab === 'serverconfig' && (
+            <ServerConfigLiveLab onCompleteLab={() => onAwardLabXp?.(100)} />
+          )}
+          {category !== 'speedrun' && activeLab === 'vpnconfig' && (
+            <VpnConfigLiveLab onCompleteLab={() => onAwardLabXp?.(95)} />
+          )}
+          {category !== 'speedrun' && isAdvancedLabId(activeLab) && (
+            <ExpertAdvancedLiveLab
+              key={activeLab}
+              labId={activeLab}
+              onCompleteLab={() => onAwardLabXp?.(110)}
+            />
+          )}
           {category !== 'speedrun' && activeLab === 'ctf' && (
             <CtfGuidedLab onCaptureFlag={onCaptureCtfFlag} />
           )}

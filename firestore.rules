@@ -40,7 +40,7 @@ service cloud.firestore {
         && data.learnerName.size() >= 1
         && data.learnerName.size() <= 48
         && data.completedIslands is list
-        && data.completedIslands.size() <= 25
+        && data.completedIslands.size() <= 35
         && (data.completedIslands.size() == 0 || data.completedIslands[0] is int)
         && data.totalXp is number
         && data.totalXp >= 0
@@ -80,7 +80,7 @@ service cloud.firestore {
         && data.totalXp <= 50000
         && data.completedIslandsCount is int
         && data.completedIslandsCount >= 0
-        && data.completedIslandsCount <= 25
+        && data.completedIslandsCount <= 35
         && data.bestSpeedrunMs is int
         && data.bestSpeedrunMs >= 0
         && data.bestSpeedrunMs <= 3600000

@@ -10,7 +10,7 @@ import {
   Wrench,
   Layers,
 } from 'lucide-react';
-import { DEBUG_TICKETS, GLOSSARY_TERMS } from '../data/courseData';
+import { DEBUG_TICKETS, getShortNumberedCourseName, GLOSSARY_TERMS } from '../data/courseData';
 import { FLASHCARDS } from '../data/extraLabsData';
 import { GemiBotGuide } from './GemiBotGuide';
 import { FlashcardsDeck } from './FlashcardsDeck';
@@ -392,8 +392,8 @@ export const DebugExpressView: React.FC<DebugExpressViewProps> = ({
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
-                    <span>
-                      Île {String(entry.islandId).padStart(2, '0')} · {entry.category}
+                    <span className="tabular-nums">
+                      Cours {getShortNumberedCourseName(entry.islandId)} · {entry.category}
                     </span>
                     {unlocked ? (
                       <Unlock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -415,8 +415,9 @@ export const DebugExpressView: React.FC<DebugExpressViewProps> = ({
                     </>
                   ) : (
                     <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                      Complétez l&apos;Île {entry.islandId} (ou activez le mode formateur) pour
-                      débloquer cette fiche dans votre carnet de bord.
+                      Complétez le cours « {getShortNumberedCourseName(entry.islandId)} » (ou
+                      activez le mode formateur) pour débloquer cette fiche dans votre carnet de
+                      bord.
                     </p>
                   )}
                 </article>

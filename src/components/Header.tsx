@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Cloud, PlayCircle, Shield, Trophy, UserCircle2, Zap } from 'lucide-react';
+import { getCourseName, getShortCourseName } from '../data/courseData';
 import { SPRING_SNAPPY } from './MotionPrimitives';
 
 export type AppRoute =
@@ -151,9 +152,11 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             whileTap={{ scale: 0.97 }}
             onClick={() => onOpenIsland(nextIslandId)}
-            className="px-3.5 py-2 text-xs sm:text-sm font-semibold text-white dark:text-slate-950 bg-sky-700 hover:bg-sky-800 dark:bg-cyan-400 dark:hover:bg-cyan-300 rounded-lg transition-colors whitespace-nowrap shrink-0 tabular-nums"
+            title={`Ouvrir le cours : ${nextStepNumber ? `${String(nextStepNumber).padStart(2, '0')}. ` : ''}${getCourseName(nextIslandId)}`}
+            className="px-3.5 py-2 text-xs sm:text-sm font-semibold text-white dark:text-slate-950 bg-sky-700 hover:bg-sky-800 dark:bg-cyan-400 dark:hover:bg-cyan-300 rounded-lg transition-colors whitespace-nowrap shrink-0 max-w-[205px] truncate tabular-nums"
           >
-            {nextStepNumber ? `Étape ${nextStepNumber}` : `Île ${nextIslandId}`}
+            {nextStepNumber ? `${String(nextStepNumber).padStart(2, '0')} · ` : ''}
+            {getShortCourseName(nextIslandId)}
           </motion.button>
         </div>
       </div>

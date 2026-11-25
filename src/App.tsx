@@ -20,7 +20,8 @@ import { LearningPaceId } from './data/mentors';
 import { AppRoute, Header } from './components/Header';
 import { ArchipelagoView } from './components/ArchipelagoView';
 import { IslandLessonView } from './components/IslandLessonView';
-import { LabsHubView } from './components/LabsHubView';
+import { LabCategory, LabsHubView, LabTab } from './components/LabsHubView';
+import { AdvancedLabId } from './data/advancedCoursesData';
 import { DebugExpressView } from './components/DebugExpressView';
 import { StoryboardsView } from './components/StoryboardsView';
 import { QuizAndSheetsView } from './components/QuizAndSheetsView';
@@ -192,6 +193,10 @@ function loadProgress(): StoredProgress {
 export default function App() {
   const [route, setRoute] = useState<AppRoute>('archipel');
   const [quizInitialSection, setQuizInitialSection] = useState<'quiz' | 'cases' | 'exam' | 'duel'>('quiz');
+  const [labsInitialTarget, setLabsInitialTarget] = useState<{
+    category: LabCategory;
+    lab: LabTab;
+  } | null>(null);
   const [activeIslandId, setActiveIslandId] = useState<number>(1);
   const [certificateOpen, setCertificateOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
@@ -501,7 +506,7 @@ export default function App() {
     ).slice(0, 48);
     const safeCompleted = progress.completedIslands
       .filter((id) => Number.isInteger(id))
-      .slice(0, 25);
+      .slice(0, 35);
     const safeXp = Math.max(0, Math.min(50000, Math.round(totalXp)));
     const safeBestExam =
       progress.bestExamScore === null
@@ -622,7 +627,28 @@ export default function App() {
     if (nextRoute === 'quiz') {
       setQuizInitialSection('quiz');
     }
+    if (nextRoute === 'simulateur') {
+      setLabsInitialTarget(null);
+    }
     setRoute(nextRoute);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenVpnLab = () => {
+    setLabsInitialTarget({ category: 'tools', lab: 'vpnconfig' });
+    setRoute('simulateur');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenServerLab = () => {
+    setLabsInitialTarget({ category: 'tools', lab: 'serverconfig' });
+    setRoute('simulateur');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenAdvancedLab = (labId: AdvancedLabId) => {
+    setLabsInitialTarget({ category: 'tools', lab: labId });
+    setRoute('simulateur');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -861,11 +887,17 @@ export default function App() {
             onCompleteIsland={handleCompleteIsland}
             onSelectIsland={handleOpenIsland}
             onBackToMap={() => handleNavigate('archipel')}
+            onOpenVpnLab={handleOpenVpnLab}
+            onOpenServerLab={handleOpenServerLab}
+            onOpenAdvancedLab={handleOpenAdvancedLab}
+            onAwardLabXp={(xp) => handleAddExtraXp(xp)}
           />
         )}
 
         {route === 'simulateur' && (
           <LabsHubView
+            initialCategory={labsInitialTarget?.category}
+            initialLab={labsInitialTarget?.lab}
             onWinDdosXp={() => {
               setProgress((p) => ({
                 ...p,

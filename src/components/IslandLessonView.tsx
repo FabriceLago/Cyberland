@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, CheckCircle2, Film, Gamepad2, BookOpen, Star } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, Film, Gamepad2, BookOpen, Star, Lock, Terminal, ShieldCheck, ExternalLink, Server } from 'lucide-react';
 import {
   ASSETS,
   CareerTrack,
   getAnalystPhaseForIsland,
+  getNumberedCourseName,
   getOrderedIslandsForTrack,
+  getShortNumberedCourseName,
   IslandModule,
 } from '../data/courseData';
 import { GemiBotGuide } from './GemiBotGuide';
@@ -31,6 +33,10 @@ import { Island19ServerFirewallGame } from './games/Island19ServerFirewallGame';
 import { Island20VlanSwitchGame } from './games/Island20VlanSwitchGame';
 import { Island21Ipv6Game } from './games/Island21Ipv6Game';
 import { Island22ApiJwtGame } from './games/Island22ApiJwtGame';
+import { VpnConfigLiveLab } from './labs/VpnConfigLiveLab';
+import { ServerConfigLiveLab } from './labs/ServerConfigLiveLab';
+import { ExpertAdvancedLiveLab } from './labs/ExpertAdvancedLiveLab';
+import { ADVANCED_COURSE_GUIDES, AdvancedLabId } from '../data/advancedCoursesData';
 import { playClick } from '../utils/sound';
 
 interface IslandLessonViewProps {
@@ -42,9 +48,13 @@ interface IslandLessonViewProps {
   onCompleteIsland: (islandId: number, stars: number) => void;
   onSelectIsland: (islandId: number) => void;
   onBackToMap: () => void;
+  onOpenVpnLab?: () => void;
+  onOpenServerLab?: () => void;
+  onOpenAdvancedLab?: (labId: AdvancedLabId) => void;
+  onAwardLabXp?: (xp: number) => void;
 }
 
-type ModuleTab = 'animation' | 'game' | 'notions';
+type ModuleTab = 'animation' | 'game' | 'notions' | 'live-lab';
 
 export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
   island,
@@ -55,12 +65,17 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
   onCompleteIsland,
   onSelectIsland,
   onBackToMap,
+  onOpenVpnLab,
+  onOpenServerLab,
+  onOpenAdvancedLab,
+  onAwardLabXp,
 }) => {
-  const [activeTab, setActiveTab] = useState<ModuleTab>('animation');
+  const advancedGuide = ADVANCED_COURSE_GUIDES[island.id];
+  const [activeTab, setActiveTab] = useState<ModuleTab>(advancedGuide ? 'notions' : 'animation');
   const [coverErr, setCoverErr] = useState(false);
 
   useEffect(() => {
-    setActiveTab('animation');
+    setActiveTab(ADVANCED_COURSE_GUIDES[island.id] ? 'notions' : 'animation');
     setCoverErr(false);
   }, [island.id]);
 
@@ -115,6 +130,12 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
       ? ASSETS.ipv6TransitionCover
       : island.id === 22
       ? ASSETS.apiOauthJwtCover
+      : island.id === 29
+      ? ASSETS.serverFirewallCover
+      : island.id === 30
+      ? ASSETS.azureMonitorTowerCover
+      : island.id === 31
+      ? ASSETS.adCitadelCover
       : island.id >= 4
       ? ASSETS.cloudSummitCover
       : null;
@@ -135,15 +156,15 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
           Retour à la carte de l&apos;archipel
         </button>
 
-        <div className="flex items-center gap-1 p-1 bg-slate-200/70 dark:bg-slate-800 rounded-lg overflow-x-auto">
-          {orderedIslands.map((item, idx) => {
+        <div className="flex items-center gap-1 p-1 bg-slate-200/70 dark:bg-slate-800 rounded-lg overflow-x-auto max-w-full">
+          {orderedIslands.map((item) => {
             const done = completedIslands.includes(item.id);
             const active = item.id === island.id;
             return (
               <button
                 key={item.id}
                 type="button"
-                title={item.title}
+                title={getNumberedCourseName(item, selectedTrackId)}
                 onClick={() => {
                   playClick();
                   onSelectIsland(item.id);
@@ -154,7 +175,7 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                 }`}
               >
-                Étape {idx + 1} {done ? '✓' : ''}
+                {getShortNumberedCourseName(item, selectedTrackId)} {done ? '✓' : ''}
               </button>
             );
           })}
@@ -166,9 +187,16 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
         <div className={`${coverImage && !coverErr ? 'lg:col-span-8' : 'lg:col-span-12'} space-y-3`}>
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span className="font-mono font-semibold text-sky-700 dark:text-sky-400 tabular-nums">
-              {currentPhase ? `Palier ${currentPhase.phaseNumber} · ` : ''}Étape {stepNumber}/
-              {orderedIslands.length}
+              Cours {String(stepNumber).padStart(2, '0')}/{orderedIslands.length}
             </span>
+            {currentPhase && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                  {currentPhase.title.replace(/^Palier \d+\s*·\s*/, '')}
+                </span>
+              </>
+            )}
             <span aria-hidden="true">·</span>
             <span>{island.category}</span>
             <span aria-hidden="true">·</span>
@@ -203,7 +231,7 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
           </div>
 
           <h1 className="font-display text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100">
-            {island.title}
+            {getNumberedCourseName(island, selectedTrackId)}
           </h1>
           <p className="text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl">
             {island.summary}
@@ -230,12 +258,38 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
           aria-label="Sections du module"
           className="inline-flex flex-wrap items-center gap-1 p-1 bg-slate-200/80 dark:bg-slate-800 rounded-lg"
         >
-          {(
-            [
-              { id: 'animation' as ModuleTab, label: `1. Animation · ${island.videoDuration}`, icon: Film },
-              { id: 'game' as ModuleTab, label: `2. Mini-jeu · ${island.gameTitle}`, icon: Gamepad2 },
-              { id: 'notions' as ModuleTab, label: '3. Fiche de notions', icon: BookOpen },
-            ]
+          {(advancedGuide
+            ? [
+                {
+                  id: 'notions' as ModuleTab,
+                  label: '1. Cours complet (6 étapes)',
+                  icon: BookOpen,
+                },
+                {
+                  id: 'live-lab' as ModuleTab,
+                  label: '2. Lab temps réel · Validation 3★',
+                  icon: Terminal,
+                },
+              ]
+            : [
+                { id: 'animation' as ModuleTab, label: `1. Animation · ${island.videoDuration}`, icon: Film },
+                { id: 'game' as ModuleTab, label: `2. Mini-jeu · ${island.gameTitle}`, icon: Gamepad2 },
+                {
+                  id: 'notions' as ModuleTab,
+                  label:
+                    island.id === 18
+                      ? '3. Cours VPN (Création & Config)'
+                      : island.id === 19
+                        ? '3. Cours Serveur (Création & Config)'
+                        : '3. Fiche de notions',
+                  icon: BookOpen,
+                },
+                ...(island.id === 18
+                  ? [{ id: 'live-lab' as ModuleTab, label: '4. Lab VPN temps réel', icon: Lock }]
+                  : island.id === 19
+                    ? [{ id: 'live-lab' as ModuleTab, label: '4. Lab Serveur temps réel', icon: Server }]
+                    : []),
+              ]
           ).map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
@@ -731,88 +785,476 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
           )}
 
           {island.id === 18 && (
-            <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-              <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
-                Comparatif NAT, Pare-feu Stateful, WireGuard &amp; IPSec
-              </h3>
-              <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
-                <table className="w-full text-left text-xs sm:text-sm">
-                  <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
-                    <tr>
-                      <th className="py-3 px-4 font-semibold">Technologie</th>
-                      <th className="py-3 px-4 font-semibold">Port / Fonctionnement</th>
-                      <th className="py-3 px-4 font-semibold">Cas d&apos;usage recommandé</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
-                    <tr>
-                      <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">NAT / PAT</td>
-                      <td className="py-3 px-4">Traduction IP privée + port</td>
-                      <td className="py-3 px-4">Partager 1 IPv4 publique entre tout un réseau local</td>
-                    </tr>
-                    <tr>
-                      <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">WireGuard</td>
-                      <td className="py-3 px-4 font-mono">UDP 51820 · Clés Curve25519</td>
-                      <td className="py-3 px-4">VPN rapide, moderne et fluide en mobilité (roaming 4G/Wi-Fi)</td>
-                    </tr>
-                    <tr>
-                      <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">IPSec (IKEv2/ESP)</td>
-                      <td className="py-3 px-4 font-mono">UDP 500/4500 · Protocole 50</td>
-                      <td className="py-3 px-4">Interconnexion Site-to-Site entre pare-feux matériels et Cloud</td>
-                    </tr>
-                    <tr>
-                      <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">Full vs Split Tunnel</td>
-                      <td className="py-3 px-4">Routage 100 % vs sélectif</td>
-                      <td className="py-3 px-4">Full Tunnel obligatoire sur Wi-Fi public ; Split pour économiser la bande passante</td>
-                    </tr>
-                  </tbody>
-                </table>
+            <div className="space-y-8 pt-4 border-t border-slate-200 dark:border-slate-800">
+              {/* Step-by-step VPN Creation & Configuration Course */}
+              <div className="space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="text-xs font-mono font-bold uppercase tracking-wider text-sky-700 dark:text-cyan-400">
+                      Cours pratique complet · Déploiement terrain Linux / WireGuard
+                    </div>
+                    <h3 className="font-display text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
+                      Créer et Configurer un Serveur VPN WireGuard de A à Z
+                    </h3>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClick();
+                        setActiveTab('live-lab');
+                      }}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 dark:bg-cyan-500 dark:hover:bg-cyan-400 text-white dark:text-slate-950 text-xs sm:text-sm font-bold shadow-sm transition-colors"
+                    >
+                      <Lock className="w-4 h-4" />
+                      Ouvrir le Lab VPN temps réel
+                    </button>
+                    {onOpenVpnLab && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClick();
+                          onOpenVpnLab();
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        Plein écran (Hub Labs)
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                  Un VPN d&apos;entreprise repose sur une passerelle Linux exposée sur un unique port UDP (par défaut{' '}
+                  <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-xs">51820/udp</code>
+                  ). Suivez ces 6 étapes dans l&apos;ordre exact d&apos;un déploiement en production, puis reproduisez-les immédiatement dans le laboratoire temps réel.
+                </p>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Step 1 */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-4 space-y-2.5">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-sky-700 dark:text-cyan-400">
+                      <Terminal className="w-4 h-4 shrink-0" />
+                      ÉTAPE 1 · Installer WireGuard &amp; générer les clés Curve25519
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      On verrouille les droits avec <code className="font-mono">umask 077</code> (lecture réservée à <code className="font-mono">root</code>), puis on génère la paire serveur, la paire client et une clé pré-partagée (<code className="font-mono">psk</code>) post-quantique.
+                    </p>
+                    <pre className="p-3 rounded-lg bg-slate-900 text-emerald-300 font-mono text-[11px] overflow-x-auto leading-relaxed">
+{`sudo apt update && sudo apt install -y wireguard iptables
+cd /etc/wireguard && umask 077
+wg genkey | tee server_private.key | wg pubkey > server_public.key
+wg genkey | tee client_private.key | wg pubkey > client_public.key
+wg genpsk > client.psk`}
+                    </pre>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-4 space-y-2.5">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-sky-700 dark:text-cyan-400">
+                      <Terminal className="w-4 h-4 shrink-0" />
+                      ÉTAPE 2 · Configurer le serveur (/etc/wireguard/wg0.conf)
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      La section <code className="font-mono">[Interface]</code> définit l&apos;IP tunnel du serveur (<code className="font-mono">10.10.0.1/24</code>), le port UDP et les règles NAT <code className="font-mono">PostUp</code>/<code className="font-mono">PostDown</code>. Chaque poste autorisé possède un bloc <code className="font-mono">[Peer]</code>.
+                    </p>
+                    <pre className="p-3 rounded-lg bg-slate-900 text-sky-200 font-mono text-[11px] overflow-x-auto leading-relaxed">
+{`[Interface]
+Address = 10.10.0.1/24
+ListenPort = 51820
+PrivateKey = <SERVER_PRIVATE_KEY>
+PostUp = iptables -t nat -A POSTROUTING -s 10.10.0.0/24 -o eth0 -j MASQUERADE
+PostDown = iptables -t nat -D POSTROUTING -s 10.10.0.0/24 -o eth0 -j MASQUERADE
+
+[Peer]
+PublicKey = <CLIENT_PUBLIC_KEY>
+PresharedKey = <CLIENT_PSK>
+AllowedIPs = 10.10.0.2/32`}
+                    </pre>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-4 space-y-2.5">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-sky-700 dark:text-cyan-400">
+                      <ShieldCheck className="w-4 h-4 shrink-0" />
+                      ÉTAPE 3 · Activer le routage noyau (ip_forward) &amp; UFW
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      Par défaut, Linux ne transfère pas les paquets entre <code className="font-mono">wg0</code> et <code className="font-mono">eth0</code>. Activez <code className="font-mono">ip_forward</code> et n&apos;ouvrez que le port UDP WireGuard sur le pare-feu.
+                    </p>
+                    <pre className="p-3 rounded-lg bg-slate-900 text-amber-200 font-mono text-[11px] overflow-x-auto leading-relaxed">
+{`echo "net.ipv4.ip_forward=1" | sudo tee /etc/sysctl.d/99-wireguard.conf
+sudo sysctl -p /etc/sysctl.d/99-wireguard.conf
+
+sudo ufw default deny incoming
+sudo ufw allow 51820/udp comment "WireGuard VPN"
+sudo ufw enable`}
+                    </pre>
+                  </div>
+
+                  {/* Step 4 */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-4 space-y-2.5">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-sky-700 dark:text-cyan-400">
+                      <Lock className="w-4 h-4 shrink-0" />
+                      ÉTAPE 4 · Profil client (Full-Tunnel vs Split-Tunnel &amp; DNS)
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      Utilisez <code className="font-mono">AllowedIPs = 0.0.0.0/0, ::/0</code> sur Wi-Fi public (Full-Tunnel) et forcez un <code className="font-mono">DNS</code> interne pour éliminer les fuites DNS. <code className="font-mono">PersistentKeepalive = 25</code> maintient l&apos;ouverture NAT.
+                    </p>
+                    <pre className="p-3 rounded-lg bg-slate-900 text-cyan-200 font-mono text-[11px] overflow-x-auto leading-relaxed">
+{`[Interface]
+PrivateKey = <CLIENT_PRIVATE_KEY>
+Address = 10.10.0.2/32
+DNS = 10.10.0.1
+
+[Peer]
+PublicKey = <SERVER_PUBLIC_KEY>
+PresharedKey = <CLIENT_PSK>
+Endpoint = vpn.cyberland.fr:51820
+AllowedIPs = 0.0.0.0/0, ::/0
+PersistentKeepalive = 25`}
+                    </pre>
+                  </div>
+
+                  {/* Step 5 */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-4 space-y-2.5">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-sky-700 dark:text-cyan-400">
+                      <Terminal className="w-4 h-4 shrink-0" />
+                      ÉTAPE 5 · Démarrer l&apos;interface &amp; rendre persistant
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      Montez le tunnel avec <code className="font-mono">wg-quick</code> et activez le service systemd pour un redémarrage automatique après reboot serveur.
+                    </p>
+                    <pre className="p-3 rounded-lg bg-slate-900 text-emerald-300 font-mono text-[11px] overflow-x-auto leading-relaxed">
+{`sudo chmod 600 /etc/wireguard/wg0.conf
+sudo wg-quick up wg0
+sudo systemctl enable wg-quick@wg0`}
+                    </pre>
+                  </div>
+
+                  {/* Step 6 */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-4 space-y-2.5">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-sky-700 dark:text-cyan-400">
+                      <ShieldCheck className="w-4 h-4 shrink-0" />
+                      ÉTAPE 6 · Diagnostiquer &amp; auditer en temps réel
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      Vérifiez la présence d&apos;un <code className="font-mono">latest handshake</code> récent (&lt; 2 min), l&apos;IP publique de sortie et l&apos;absence de fuite DNS.
+                    </p>
+                    <pre className="p-3 rounded-lg bg-slate-900 text-violet-200 font-mono text-[11px] overflow-x-auto leading-relaxed">
+{`sudo wg show                   # Vérifie handshake & octets TX/RX
+ping -c 3 192.168.10.50        # Teste l'accès au LAN interne
+curl -s https://ifconfig.me    # Doit afficher l'IP du serveur VPN
+dig +short intranet.corp       # Vérifie que le DNS passe par 10.10.0.1`}
+                    </pre>
+                  </div>
+                </div>
+
+                {/* Troubleshooting quick table */}
+                <div className="rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/60 dark:bg-amber-950/25 p-4 space-y-2">
+                  <div className="text-xs font-mono font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                    Réflexes Analyste &amp; Dépannage rapide (Pannes VPN classiques)
+                  </div>
+                  <ul className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-slate-700 dark:text-slate-300">
+                    <li className="space-y-1">
+                      <span className="font-bold text-slate-900 dark:text-white block">Aucun handshake</span>
+                      Port UDP bloqué par UFW/Cloud Security Group, ou mauvaise <code className="font-mono">PublicKey</code> / <code className="font-mono">Endpoint</code>.
+                    </li>
+                    <li className="space-y-1">
+                      <span className="font-bold text-slate-900 dark:text-white block">Handshake OK mais pas d&apos;Internet</span>
+                      <code className="font-mono">net.ipv4.ip_forward=1</code> oublié ou règle <code className="font-mono">iptables MASQUERADE</code> absente.
+                    </li>
+                    <li className="space-y-1">
+                      <span className="font-bold text-slate-900 dark:text-white block">Fuite DNS sur Wi-Fi public</span>
+                      Directive <code className="font-mono">DNS = 10.10.0.1</code> absente du client : les noms de domaines partent en clair vers le FAI.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Existing comparison table */}
+              <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
+                  Comparatif NAT, Pare-feu Stateful, WireGuard &amp; IPSec
+                </h3>
+                <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+                  <table className="w-full text-left text-xs sm:text-sm">
+                    <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                      <tr>
+                        <th className="py-3 px-4 font-semibold">Technologie</th>
+                        <th className="py-3 px-4 font-semibold">Port / Fonctionnement</th>
+                        <th className="py-3 px-4 font-semibold">Cas d&apos;usage recommandé</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                      <tr>
+                        <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">NAT / PAT</td>
+                        <td className="py-3 px-4">Traduction IP privée + port</td>
+                        <td className="py-3 px-4">Partager 1 IPv4 publique entre tout un réseau local</td>
+                      </tr>
+                      <tr>
+                        <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">WireGuard</td>
+                        <td className="py-3 px-4 font-mono">UDP 51820 · Clés Curve25519</td>
+                        <td className="py-3 px-4">VPN rapide, moderne et fluide en mobilité (roaming 4G/Wi-Fi)</td>
+                      </tr>
+                      <tr>
+                        <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">IPSec (IKEv2/ESP)</td>
+                        <td className="py-3 px-4 font-mono">UDP 500/4500 · Protocole 50</td>
+                        <td className="py-3 px-4">Interconnexion Site-to-Site entre pare-feux matériels et Cloud</td>
+                      </tr>
+                      <tr>
+                        <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">Full vs Split Tunnel</td>
+                        <td className="py-3 px-4">Routage 100 % vs sélectif</td>
+                        <td className="py-3 px-4">Full Tunnel obligatoire sur Wi-Fi public ; Split pour économiser la bande passante</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
 
           {island.id === 19 && (
-            <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-              <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
-                Checklist Réelle : Créer, Configurer un Serveur &amp; Placer le Pare-feu
-              </h3>
-              <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
-                <table className="w-full text-left text-xs sm:text-sm">
-                  <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
-                    <tr>
-                      <th className="py-3 px-4 font-semibold">Étape</th>
-                      <th className="py-3 px-4 font-semibold">Commande / Configuration clé</th>
-                      <th className="py-3 px-4 font-semibold">Objectif sécurité &amp; architecture</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
-                    <tr>
-                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">1. Créer &amp; mettre à jour</td>
-                      <td className="py-3 px-4 font-mono">sudo apt update &amp;&amp; sudo apt upgrade -y</td>
-                      <td className="py-3 px-4">Partir sur un OS Linux LTS (Ubuntu/Debian) à jour avec IP statique</td>
-                    </tr>
-                    <tr>
-                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">2. Durcir SSH</td>
-                      <td className="py-3 px-4 font-mono">PermitRootLogin no · PasswordAuthentication no</td>
-                      <td className="py-3 px-4">Compte sudo dédié + clé SSH Ed25519 (bloque les attaques force brute)</td>
-                    </tr>
-                    <tr>
-                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">3. Reverse Proxy &amp; TLS</td>
-                      <td className="py-3 px-4 font-mono">nginx + certbot --nginx</td>
-                      <td className="py-3 px-4">Chiffrement HTTPS sur :443 tout en gardant l&apos;application sur 127.0.0.1</td>
-                    </tr>
-                    <tr>
-                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">4. Placer le Pare-feu</td>
-                      <td className="py-3 px-4 font-mono">WAN → FW1 → DMZ (Web) → FW2 → LAN (DB)</td>
-                      <td className="py-3 px-4">Isoler les serveurs exposés en DMZ et protéger la base de données derrière FW2</td>
-                    </tr>
-                    <tr>
-                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">5. Filtrer avec UFW</td>
-                      <td className="py-3 px-4 font-mono">ufw default deny incoming &amp;&amp; ufw allow 443/tcp</td>
-                      <td className="py-3 px-4">Tout bloquer par défaut ; restreindre SSH (22) à l&apos;IP admin ou VPN ; bloquer 5432/23</td>
-                    </tr>
-                  </tbody>
-                </table>
+            <div className="space-y-8 pt-4 border-t border-slate-200 dark:border-slate-800">
+              {/* Complete 6-Step Server Creation & Configuration Course */}
+              <div className="space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="text-xs font-mono font-bold uppercase tracking-wider text-sky-700 dark:text-cyan-400">
+                      Cours pratique complet · Provisioning &amp; Durcissement Linux Production
+                    </div>
+                    <h3 className="font-display text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
+                      Créer, Configurer et Sécuriser un Serveur Linux de A à Z
+                    </h3>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClick();
+                        setActiveTab('live-lab');
+                      }}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 dark:bg-cyan-500 dark:hover:bg-cyan-400 text-white dark:text-slate-950 text-xs sm:text-sm font-bold shadow-sm transition-colors"
+                    >
+                      <Server className="w-4 h-4" />
+                      Ouvrir le Lab Serveur temps réel
+                    </button>
+                    {onOpenServerLab && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClick();
+                          onOpenServerLab();
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        Plein écran (Hub Labs)
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                  Un serveur exposé sur Internet subit ses premiers scans automatisés en moins de 60 secondes. Suivez cette méthode terrain en 6 étapes — de la création de l&apos;instance Linux LTS jusqu&apos;à l&apos;audit{' '}
+                  <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-xs">nmap</code>
+                  — puis appliquez-la immédiatement dans le laboratoire temps réel.
+                </p>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Step 1 */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-4 space-y-2.5">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-sky-700 dark:text-cyan-400">
+                      <Server className="w-4 h-4 shrink-0" />
+                      ÉTAPE 1 · Provisionner l&apos;OS LTS, Hostname &amp; mises à jour
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      Déployez une VM/VPS sous <strong>Ubuntu 24.04 LTS</strong> ou <strong>Debian 12</strong> avec IP statique, pointez un enregistrement DNS <code className="font-mono">A</code> vers cette IP, nommez l&apos;hôte et patchez l&apos;OS.
+                    </p>
+                    <pre className="p-3 rounded-lg bg-slate-900 text-emerald-300 font-mono text-[11px] overflow-x-auto leading-relaxed">
+{`sudo hostnamectl set-hostname srv-web-prod-01
+sudo timedatectl set-timezone Europe/Paris
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y ufw fail2ban nginx certbot python3-certbot-nginx`}
+                    </pre>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-4 space-y-2.5">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-sky-700 dark:text-cyan-400">
+                      <Terminal className="w-4 h-4 shrink-0" />
+                      ÉTAPE 2 · Créer le compte sudo &amp; déployer la clé SSH Ed25519
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      Ne travaillez jamais au quotidien en <code className="font-mono">root</code>. Créez un utilisateur dédié (<code className="font-mono">deploy</code>) et copiez votre clé publique Ed25519 depuis votre poste.
+                    </p>
+                    <pre className="p-3 rounded-lg bg-slate-900 text-sky-200 font-mono text-[11px] overflow-x-auto leading-relaxed">
+{`# Sur le serveur :
+sudo adduser deploy && sudo usermod -aG sudo deploy
+
+# Depuis votre poste administrateur :
+ssh-keygen -t ed25519 -C "admin@cyberland"
+ssh-copy-id deploy@203.0.113.42`}
+                    </pre>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-4 space-y-2.5">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-sky-700 dark:text-cyan-400">
+                      <Lock className="w-4 h-4 shrink-0" />
+                      ÉTAPE 3 · Durcir SSH (/etc/ssh/sshd_config.d/99-hardening.conf)
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      Une fois la connexion par clé vérifiée dans un second terminal, coupez <code className="font-mono">root</code> et les mots de passe, puis validez la syntaxe avec <code className="font-mono">sshd -t</code> avant de recharger.
+                    </p>
+                    <pre className="p-3 rounded-lg bg-slate-900 text-amber-200 font-mono text-[11px] overflow-x-auto leading-relaxed">
+{`PermitRootLogin no
+PasswordAuthentication no
+PubkeyAuthentication yes
+MaxAuthTries 3
+AllowUsers deploy
+
+# Vérifier puis recharger sans couper la session :
+sudo sshd -t && sudo systemctl reload ssh
+sudo systemctl enable --now fail2ban`}
+                    </pre>
+                  </div>
+
+                  {/* Step 4 */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-4 space-y-2.5">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-sky-700 dark:text-cyan-400">
+                      <Terminal className="w-4 h-4 shrink-0" />
+                      ÉTAPE 4 · Service applicatif systemd isolé sur 127.0.0.1:3000
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      L&apos;application tourne sous <code className="font-mono">deploy</code>, redémarre automatiquement en cas de crash et n&apos;écoute que sur <code className="font-mono">127.0.0.1</code> (boucle locale).
+                    </p>
+                    <pre className="p-3 rounded-lg bg-slate-900 text-cyan-200 font-mono text-[11px] overflow-x-auto leading-relaxed">
+{`# /etc/systemd/system/cyberapp.service
+[Service]
+User=deploy
+Environment=HOST=127.0.0.1
+Environment=PORT=3000
+ExecStart=/usr/bin/node /srv/cyberapp/server.js
+Restart=always
+NoNewPrivileges=true
+
+sudo systemctl daemon-reload && sudo systemctl enable --now cyberapp`}
+                    </pre>
+                  </div>
+
+                  {/* Step 5 */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-4 space-y-2.5">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-sky-700 dark:text-cyan-400">
+                      <ShieldCheck className="w-4 h-4 shrink-0" />
+                      ÉTAPE 5 · Reverse Proxy Nginx &amp; certificat HTTPS Let&apos;s Encrypt
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      Nginx expose le domaine en HTTPS (TLS 1.3), ajoute les en-têtes HSTS et transmet les requêtes au backend local. Certbot automatise le certificat et son renouvellement.
+                    </p>
+                    <pre className="p-3 rounded-lg bg-slate-900 text-emerald-300 font-mono text-[11px] overflow-x-auto leading-relaxed">
+{`server {
+    listen 80;
+    server_name app.cyberland.fr;
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d app.cyberland.fr`}
+                    </pre>
+                  </div>
+
+                  {/* Step 6 */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-4 space-y-2.5">
+                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-sky-700 dark:text-cyan-400">
+                      <ShieldCheck className="w-4 h-4 shrink-0" />
+                      ÉTAPE 6 · Pare-feu UFW (Deny by Default) &amp; Audit en direct
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      Bloquez tout par défaut, autorisez uniquement SSH (restreint), 80 et 443, gardez PostgreSQL (:5432) sur le réseau privé et vérifiez les ports ouverts.
+                    </p>
+                    <pre className="p-3 rounded-lg bg-slate-900 text-violet-200 font-mono text-[11px] overflow-x-auto leading-relaxed">
+{`sudo ufw default deny incoming
+sudo ufw allow from 198.51.100.10 to any port 22 proto tcp
+sudo ufw allow 80/tcp && sudo ufw allow 443/tcp
+sudo ufw enable
+
+sudo ss -tulpn                         # Vérifie les sockets locales
+curl -I https://app.cyberland.fr       # Vérifie HTTP/2 200 + HSTS
+nmap -Pn 203.0.113.42                  # Confirme 0 port sensible exposé`}
+                    </pre>
+                  </div>
+                </div>
+
+                {/* Admin Troubleshooting Box */}
+                <div className="rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/60 dark:bg-amber-950/25 p-4 space-y-2">
+                  <div className="text-xs font-mono font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                    Réflexes Admin &amp; Incidents Serveur classiques
+                  </div>
+                  <ul className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-slate-700 dark:text-slate-300">
+                    <li className="space-y-1">
+                      <span className="font-bold text-slate-900 dark:text-white block">Erreur 502 Bad Gateway</span>
+                      Nginx fonctionne mais le service backend (<code className="font-mono">cyberapp.service</code>) est arrêté ou écoute sur un autre port. Vérifiez <code className="font-mono">journalctl -u cyberapp -n 50</code>.
+                    </li>
+                    <li className="space-y-1">
+                      <span className="font-bold text-slate-900 dark:text-white block">Lockout SSH après UFW</span>
+                      Ne lancez jamais <code className="font-mono">ufw enable</code> sans avoir vérifié <code className="font-mono">ufw allow 22/tcp</code> au préalable.
+                    </li>
+                    <li className="space-y-1">
+                      <span className="font-bold text-slate-900 dark:text-white block">Base de données exposée</span>
+                      Si <code className="font-mono">ss -tulpn</code> affiche <code className="font-mono">0.0.0.0:5432</code>, restreignez <code className="font-mono">listen_addresses</code> au LAN privé et bloquez 5432 côté WAN.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Existing Checklist Table */}
+              <div className="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
+                  Checklist Réelle : Créer, Configurer un Serveur &amp; Placer le Pare-feu
+                </h3>
+                <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+                  <table className="w-full text-left text-xs sm:text-sm">
+                    <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                      <tr>
+                        <th className="py-3 px-4 font-semibold">Étape</th>
+                        <th className="py-3 px-4 font-semibold">Commande / Configuration clé</th>
+                        <th className="py-3 px-4 font-semibold">Objectif sécurité &amp; architecture</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                      <tr>
+                        <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">1. Créer &amp; mettre à jour</td>
+                        <td className="py-3 px-4 font-mono">sudo apt update &amp;&amp; sudo apt upgrade -y</td>
+                        <td className="py-3 px-4">Partir sur un OS Linux LTS (Ubuntu/Debian) à jour avec IP statique</td>
+                      </tr>
+                      <tr>
+                        <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">2. Durcir SSH</td>
+                        <td className="py-3 px-4 font-mono">PermitRootLogin no · PasswordAuthentication no</td>
+                        <td className="py-3 px-4">Compte sudo dédié + clé SSH Ed25519 (bloque les attaques force brute)</td>
+                      </tr>
+                      <tr>
+                        <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">3. Reverse Proxy &amp; TLS</td>
+                        <td className="py-3 px-4 font-mono">nginx + certbot --nginx</td>
+                        <td className="py-3 px-4">Chiffrement HTTPS sur :443 tout en gardant l&apos;application sur 127.0.0.1</td>
+                      </tr>
+                      <tr>
+                        <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">4. Placer le Pare-feu</td>
+                        <td className="py-3 px-4 font-mono">WAN → FW1 → DMZ (Web) → FW2 → LAN (DB)</td>
+                        <td className="py-3 px-4">Isoler les serveurs exposés en DMZ et protéger la base de données derrière FW2</td>
+                      </tr>
+                      <tr>
+                        <td className="py-3 px-4 font-bold text-slate-900 dark:text-slate-100">5. Filtrer avec UFW</td>
+                        <td className="py-3 px-4 font-mono">ufw default deny incoming &amp;&amp; ufw allow 443/tcp</td>
+                        <td className="py-3 px-4">Tout bloquer par défaut ; restreindre SSH (22) à l&apos;IP admin ou VPN ; bloquer 5432/23</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -939,12 +1381,163 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
               </div>
             </div>
           )}
+          {advancedGuide && (
+            <div className="space-y-8 pt-4 border-t border-slate-200 dark:border-slate-800">
+              <div className="space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="text-xs font-mono font-bold uppercase tracking-wider text-sky-700 dark:text-cyan-400">
+                      {advancedGuide.kicker}
+                    </div>
+                    <h3 className="font-display text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
+                      {advancedGuide.heading}
+                    </h3>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClick();
+                        setActiveTab('live-lab');
+                      }}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 dark:bg-cyan-500 dark:hover:bg-cyan-400 text-white dark:text-slate-950 text-xs sm:text-sm font-bold shadow-sm transition-colors whitespace-nowrap"
+                    >
+                      <Terminal className="w-4 h-4 shrink-0" />
+                      {advancedGuide.labButtonLabel}
+                    </button>
+                    {onOpenAdvancedLab && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClick();
+                          onOpenAdvancedLab(advancedGuide.labId);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold transition-colors whitespace-nowrap"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                        Plein écran (Hub Labs)
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {advancedGuide.intro}
+                </p>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {advancedGuide.steps.map((step) => {
+                    const codeColor =
+                      step.accent === 'sky'
+                        ? 'text-sky-200'
+                        : step.accent === 'amber'
+                          ? 'text-amber-200'
+                          : step.accent === 'cyan'
+                            ? 'text-cyan-200'
+                            : step.accent === 'violet'
+                              ? 'text-violet-200'
+                              : 'text-emerald-300';
+                    return (
+                      <div
+                        key={step.stepTitle}
+                        className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-4 space-y-2.5"
+                      >
+                        <div className="flex items-center gap-2 text-xs font-mono font-bold text-sky-700 dark:text-cyan-400">
+                          <Terminal className="w-4 h-4 shrink-0" />
+                          <span>{step.stepTitle}</span>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                          {step.explanation}
+                        </p>
+                        <pre
+                          className={`p-3 rounded-lg bg-slate-900 ${codeColor} font-mono text-[11px] overflow-x-auto leading-relaxed`}
+                        >
+                          {step.code}
+                        </pre>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="rounded-xl border border-amber-300/70 dark:border-amber-800/80 bg-amber-50/70 dark:bg-amber-950/30 p-4 space-y-2.5">
+                  <div className="flex items-center gap-2 text-xs font-mono font-bold text-amber-900 dark:text-amber-300">
+                    <ShieldCheck className="w-4 h-4 shrink-0" />
+                    <span>{advancedGuide.troubleshootingTitle}</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    {advancedGuide.troubleshooting.map((tip) => (
+                      <div
+                        key={tip.symptom}
+                        className="p-3 rounded-lg bg-white/80 dark:bg-slate-900/80 border border-amber-200/80 dark:border-amber-900/60 space-y-1"
+                      >
+                        <p className="font-bold text-slate-900 dark:text-slate-100">{tip.symptom}</p>
+                        <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{tip.fix}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
+                    {advancedGuide.tableTitle}
+                  </h4>
+                  <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+                    <table className="w-full text-left text-xs sm:text-sm">
+                      <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                        <tr>
+                          <th className="py-3 px-4 font-semibold">{advancedGuide.tableHeaders[0]}</th>
+                          <th className="py-3 px-4 font-semibold">{advancedGuide.tableHeaders[1]}</th>
+                          <th className="py-3 px-4 font-semibold">{advancedGuide.tableHeaders[2]}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                        {advancedGuide.tableRows.map((row) => (
+                          <tr key={row.col1}>
+                            <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">
+                              {row.col1}
+                            </td>
+                            <td className="py-3 px-4">{row.col2}</td>
+                            <td className="py-3 px-4">{row.col3}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {activeTab === 'live-lab' && island.id === 18 && (
+        <section className="space-y-4">
+          <VpnConfigLiveLab onCompleteLab={() => onAwardLabXp?.(95)} />
+        </section>
+      )}
+
+      {activeTab === 'live-lab' && island.id === 19 && (
+        <section className="space-y-4">
+          <ServerConfigLiveLab onCompleteLab={() => onAwardLabXp?.(100)} />
+        </section>
+      )}
+
+      {activeTab === 'live-lab' && advancedGuide && (
+        <section className="space-y-4">
+          <ExpertAdvancedLiveLab
+            key={advancedGuide.labId}
+            labId={advancedGuide.labId}
+            onCompleteLab={() => {
+              onCompleteIsland(island.id, 3);
+              onAwardLabXp?.(110);
+            }}
+          />
         </section>
       )}
 
       {/* Contextual GemiBot */}
       <GemiBotGuide
-        contextLabel={`Indices pour ${island.title}`}
+        contextLabel={`Indices pour ${getNumberedCourseName(island, selectedTrackId)}`}
         hints={island.gemiBotHints}
       />
 
@@ -957,10 +1550,10 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
               playClick();
               onSelectIsland(prevIsland.id);
             }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors tabular-nums"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Étape {stepNumber - 1} : {prevIsland.title.replace(/^\d+\.\s*/, '')}
+            <ArrowLeft className="w-4 h-4 shrink-0" />
+            {getNumberedCourseName(prevIsland, selectedTrackId)}
           </button>
         ) : (
           <div />
@@ -973,10 +1566,10 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
               playClick();
               onSelectIsland(nextIsland.id);
             }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-sky-700 hover:bg-sky-800 rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-sky-700 hover:bg-sky-800 rounded-lg transition-colors tabular-nums"
           >
-            Étape {stepNumber + 1} : {nextIsland.title.replace(/^\d+\.\s*/, '')}
-            <ArrowRight className="w-4 h-4" />
+            {getNumberedCourseName(nextIsland, selectedTrackId)}
+            <ArrowRight className="w-4 h-4 shrink-0" />
           </button>
         ) : (
           <button

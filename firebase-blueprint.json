@@ -19,7 +19,7 @@
         },
         "completedIslands": {
           "type": "array",
-          "description": "Bounded list of completed island IDs (max 25)."
+          "description": "Bounded list of completed island IDs (max 35)."
         },
         "totalXp": {
           "type": "number",
@@ -99,7 +99,7 @@
         },
         "completedIslandsCount": {
           "type": "number",
-          "description": "Number of islands completed (0 to 25)."
+          "description": "Number of islands completed (0 to 35)."
         },
         "bestSpeedrunMs": {
           "type": "number",

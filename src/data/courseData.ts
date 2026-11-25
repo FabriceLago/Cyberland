@@ -114,8 +114,9 @@ export const ANALYST_LEARNING_PHASES: AnalystLearningPhase[] = [
     phaseNumber: 2,
     title: 'Palier 2 · Systèmes, Cloisonnement & Identité',
     subtitle: 'Maîtriser l’architecture réelle d’entreprise que l’analyste doit protéger',
-    analystGoal: 'Comprendre VLAN 802.1Q, VPN/NAT, durcissement Linux/DMZ et authentification Active Directory.',
-    islandIds: [20, 18, 19, 15],
+    analystGoal:
+      'Maîtriser VLAN 802.1Q, VPN/NAT, administration Linux, Windows Server et déploiement/sécurisation Active Directory.',
+    islandIds: [20, 18, 19, 29, 30, 15, 31],
   },
   {
     id: 'phase-3-crypto-threats-api',
@@ -141,6 +142,15 @@ export const ANALYST_LEARNING_PHASES: AnalystLearningPhase[] = [
     analystGoal: 'Disséquer des captures .pcap, interroger les logs KQL et exécuter des playbooks SIEM/SOAR.',
     islandIds: [13, 14, 16],
   },
+  {
+    id: 'phase-6-expert-specialization',
+    phaseNumber: 6,
+    title: 'Palier 6 · Spécialisation Expert & Ingénierie Avancée',
+    subtitle: 'Approfondir les 6 compétences terrain les plus demandées par ordre de priorité',
+    analystGoal:
+      'Protéger la messagerie (SPF/DKIM/DMARC), écrire des règles Sigma/YARA, mener un DFIR, automatiser en Terraform/Ansible, verrouiller l’IAM Cloud et sécuriser OSPF/BGP/RPKI.',
+    islandIds: [23, 24, 25, 26, 27, 28],
+  },
 ];
 
 export const ANALYST_FULL_ORDER: number[] = ANALYST_LEARNING_PHASES.flatMap(
@@ -150,35 +160,35 @@ export const ANALYST_FULL_ORDER: number[] = ANALYST_LEARNING_PHASES.flatMap(
 export const CAREER_TRACKS: CareerTrack[] = [
   {
     id: 'all',
-    label: 'Cursus Complet Analyste (22 étapes)',
-    certificateTitle: 'Analyste Réseaux, Cloud & Cybersécurité',
+    label: 'Cursus Complet Analyste (31 cours)',
+    certificateTitle: 'Analyste Senior Réseaux, Systèmes, Cloud & Cybersécurité',
     description:
-      'Ordre recommandé en 5 paliers : fondations réseau, systèmes & AD, menaces/crypto/API, Cloud/K8s, puis investigation Wireshark, KQL et SOC/SIEM.',
+      'Ordre recommandé en 6 paliers : fondations réseau, systèmes Linux/Windows Server/Active Directory, crypto/API, Cloud/K8s, investigation SOC et spécialisations expertes.',
     islandIds: ANALYST_FULL_ORDER,
   },
   {
     id: 'soc-cyber',
     label: 'Analyste SOC & Cybersécurité',
-    certificateTitle: 'Analyste Cybersécurité & Défense SOC',
+    certificateTitle: 'Analyste Cybersécurité, Threat Hunting & DFIR',
     description:
-      'Progression ciblée analyste SOC : protocoles, cloisonnement VLAN/DMZ/AD, crypto & Zero Trust, API/JWT, puis Wireshark, KQL et triage SIEM/SOAR.',
-    islandIds: [1, 8, 2, 3, 20, 18, 19, 15, 11, 10, 22, 13, 14, 16],
+      'Progression ciblée analyste SOC : protocoles, VLAN/VPN, Linux, Windows Server & Active Directory avancé, crypto & API, Wireshark/KQL/SIEM, puis DMARC, Sigma/YARA et DFIR.',
+    islandIds: [1, 8, 2, 3, 20, 18, 19, 29, 30, 15, 31, 11, 10, 22, 13, 14, 16, 23, 24, 25],
   },
   {
     id: 'network',
     label: 'Analyste & Ingénieur Réseau',
-    certificateTitle: 'Spécialiste Analyse & Infrastructures Réseau',
+    certificateTitle: 'Spécialiste Analyse & Infrastructures Réseau Avancées',
     description:
-      'Signaux, topologies, modèle OSI, IP/DNS, IPv6, TCP/UDP, VLAN/WPA3, VPN/NAT, pare-feu DMZ et capture Wireshark/tcpdump.',
-    islandIds: [1, 7, 8, 2, 21, 3, 20, 18, 19, 13],
+      'Signaux, topologies, OSI, IP/DNS, IPv6, TCP/UDP, VLAN/WPA3, VPN/NAT, pare-feu DMZ, Wireshark, DNS Messagerie (SPF/DKIM/DMARC) et Routage OSPF/BGP/RPKI/SD-WAN.',
+    islandIds: [1, 7, 8, 2, 21, 3, 20, 18, 19, 13, 23, 28],
   },
   {
     id: 'cloud-win',
     label: 'Analyste Cloud & Systèmes',
-    certificateTitle: 'Analyste Systèmes, Cloud & DevSecOps',
+    certificateTitle: 'Administrateur & Analyste Systèmes, Cloud & DevSecOps',
     description:
-      'Durcissement Linux/DMZ, Active Directory, sécurité API/JWT, Cloud IaaS/PaaS/SaaS, Docker, Kubernetes, CI/CD, résilience et supervision Azure Monitor.',
-    islandIds: [19, 15, 22, 4, 9, 17, 12, 5, 6, 14],
+      'Linux complet, Windows Server, Active Directory (AD DS/GPO/Tiering), API/JWT, Cloud, Docker, Kubernetes, CI/CD, Azure Monitor, Terraform/Ansible et IAM Cloud/Vault.',
+    islandIds: [19, 29, 30, 15, 31, 22, 4, 9, 17, 12, 5, 6, 14, 26, 27],
   },
 ];
 
@@ -203,6 +213,72 @@ export function getAnalystStepNumber(
   if (idx !== -1) return idx + 1;
   const fullIdx = ANALYST_FULL_ORDER.indexOf(islandId);
   return fullIdx !== -1 ? fullIdx + 1 : islandId;
+}
+
+export const SHORT_COURSE_NAMES: Record<number, string> = {
+  1: 'Signaux & Paquets',
+  2: 'IP, MAC & DNS',
+  3: 'TCP/UDP & Pare-feu',
+  4: 'Cloud (IaaS/PaaS/SaaS)',
+  5: 'Haute Dispo & PRA',
+  6: 'Éco-Cloud & FinOps',
+  7: 'LAN, WAN & Topologies',
+  8: 'Modèle OSI (7 couches)',
+  9: 'Conteneurs Docker',
+  10: 'Phishing & Zero Trust',
+  11: 'Cryptographie & TLS',
+  12: 'DevOps & CI/CD',
+  13: 'Wireshark & tcpdump',
+  14: 'Azure Monitor',
+  15: 'Active Directory',
+  16: 'Centre SOC & SIEM',
+  17: 'Kubernetes',
+  18: 'VPN WireGuard & NAT',
+  19: 'Serveur Linux & UFW',
+  20: 'VLANs & Wi-Fi WPA3',
+  21: 'IPv6 & Transition',
+  22: 'Sécurité API & JWT',
+  23: 'SPF, DKIM & DMARC',
+  24: 'Sigma, YARA & Hunting',
+  25: 'Forensics & DFIR',
+  26: 'Terraform & Ansible',
+  27: 'IAM Cloud & Secrets',
+  28: 'OSPF, BGP & SD-WAN',
+  29: 'Administration Linux',
+  30: 'Windows Server',
+  31: 'Active Directory Complet',
+};
+
+export function getCourseName(islandOrId: IslandModule | number): string {
+  const island =
+    typeof islandOrId === 'number'
+      ? ISLANDS.find((item) => item.id === islandOrId)
+      : islandOrId;
+  if (!island) return SHORT_COURSE_NAMES[typeof islandOrId === 'number' ? islandOrId : 1] ?? 'Cours';
+  return island.title.replace(/^\d+\.\s*/, '');
+}
+
+export function getShortCourseName(islandOrId: IslandModule | number): string {
+  const id = typeof islandOrId === 'number' ? islandOrId : islandOrId.id;
+  return SHORT_COURSE_NAMES[id] ?? getCourseName(islandOrId);
+}
+
+export function getNumberedCourseName(
+  islandOrId: IslandModule | number,
+  trackId: CareerTrack['id'] = 'all'
+): string {
+  const id = typeof islandOrId === 'number' ? islandOrId : islandOrId.id;
+  const num = String(getAnalystStepNumber(id, trackId)).padStart(2, '0');
+  return `${num}. ${getCourseName(islandOrId)}`;
+}
+
+export function getShortNumberedCourseName(
+  islandOrId: IslandModule | number,
+  trackId: CareerTrack['id'] = 'all'
+): string {
+  const id = typeof islandOrId === 'number' ? islandOrId : islandOrId.id;
+  const num = String(getAnalystStepNumber(id, trackId)).padStart(2, '0');
+  return `${num} · ${getShortCourseName(islandOrId)}`;
 }
 
 export const ISLANDS: IslandModule[] = [
@@ -914,82 +990,100 @@ export const ISLANDS: IslandModule[] = [
   {
     id: 18,
     slug: 'tunnel-vpn-wireguard-nat',
-    title: '18. Le Tunnel VPN, WireGuard & NAT',
-    subtitle: 'Encapsulation chiffrée, WireGuard vs IPSec, Split-Tunneling, NAT/PAT & Pare-feu Stateful',
+    title: '18. Cours VPN : Création, Configuration WireGuard & NAT',
+    subtitle: 'Architecture VPN, génération de clés Curve25519, wg0.conf, ip_forward, NAT/PAT, UFW & Split/Full-Tunnel',
     category: 'Réseaux avancés',
-    duration: '15 min',
+    duration: '20 min',
     xpReward: 320,
     badgeTitle: 'Gardien du Tunnel VPN',
-    badgeDescription: 'A configuré un tunnel WireGuard, optimisé le Split-Tunneling et décodé une table NAT/PAT.',
-    videoTitle: 'Encapsulation VPN, WireGuard, IPSec & Table NAT en animation',
+    badgeDescription: 'A créé et configuré un serveur VPN WireGuard complet, optimisé le Split-Tunneling et décodé une table NAT/PAT.',
+    videoTitle: 'Encapsulation VPN, création WireGuard, IPSec & Table NAT en animation',
     videoDuration: '2 min 10',
     gameTitle: 'Gardien du Tunnel VPN & NAT',
-    notions: ['Encapsulation VPN chiffrée', 'WireGuard vs IPSec', 'Split-Tunnel vs Full-Tunnel', 'NAT/PAT & Pare-feu Stateful'],
+    notions: [
+      'Création serveur VPN WireGuard (wg0.conf)',
+      'Clés Curve25519, PSK & [Peer]',
+      'ip_forward, NAT MASQUERADE & UFW 51820/udp',
+      'Full-Tunnel vs Split-Tunnel & fuite DNS',
+    ],
     summary:
-      "Comment un paquet privé traverse-t-il un Wi-Fi public sans être lu, et comment 50 postes partagent-ils une seule adresse IP publique ? Explorez en animation l'encapsulation WireGuard/IPSec, le Split-Tunneling, la table PAT/NAT et le filtrage Stateful.",
+      "Du principe d'encapsulation chiffrée jusqu'au déploiement réel d'un serveur VPN WireGuard sur Linux : apprenez à générer vos paires de clés Curve25519, rédiger wg0.conf et client.conf, activer le routage ip_forward + NAT MASQUERADE, ouvrir le pare-feu UFW et tester votre tunnel dans le lab temps réel.",
     keyTakeaways: [
       {
-        term: 'Encapsulation dans un tunnel VPN',
-        detail: 'Le paquet IP privé d’origine est chiffré puis enfermé dans un nouvel en-tête externe (UDP 51820 pour WireGuard ou ESP pour IPSec) jusqu’à la passerelle.',
+        term: 'Architecture & Encapsulation VPN',
+        detail: 'Le paquet IP privé d’origine est chiffré (ChaCha20-Poly1305 dans WireGuard ou AES-GCM dans IPSec) puis encapsulé dans un paquet externe (UDP 51820) traversant Internet en toute confidentialité.',
       },
       {
-        term: 'Split-Tunneling vs Full-Tunneling',
-        detail: 'Full-Tunnel fait passer 100 % du trafic par le siège (filtrage maximal mais risque de saturation) ; Split-Tunnel ne passe que les flux privés dans le VPN.',
+        term: 'Clés asymétriques Curve25519 & PresharedKey',
+        detail: 'Serveur et client génèrent chacun une clé privée (jamais partagée, chmod 600) et échangent uniquement leurs clés publiques. Une PresharedKey ajoute une résistance post-quantique symétrique.',
       },
       {
-        term: 'Table dynamique NAT / PAT',
-        detail: 'Le routeur remplace les IP privées (192.168.x.x) par son unique IP publique et associe un port source éphémère unique à chaque session.',
+        term: 'Routage serveur (ip_forward + NAT MASQUERADE)',
+        detail: 'Pour que les clients VPN atteignent le LAN interne ou Internet, le serveur Linux doit activer net.ipv4.ip_forward=1, appliquer une règle iptables MASQUERADE en PostUp et autoriser UDP 51820 dans UFW.',
       },
       {
-        term: 'Pare-feu Stateful vs Stateless',
-        detail: 'Un pare-feu Stateful mémorise les connexions sortantes légitimes dans une table d’états et laisse revenir leurs réponses sans ouvrir les ports entrants au public.',
+        term: 'Full-Tunnel vs Split-Tunnel & prévention des fuites DNS',
+        detail: 'AllowedIPs = 0.0.0.0/0, ::/0 route 100 % du trafic dans le tunnel (indispensable sur Wi-Fi public) ; ajoutez toujours un DNS interne (ex. 10.10.0.1) pour empêcher les requêtes DNS en clair vers le FAI.',
+      },
+      {
+        term: 'Table dynamique NAT / PAT & Pare-feu Stateful',
+        detail: 'Le routeur traduit les IP privées vers son IP publique via des ports sources éphémères, tandis que le pare-feu Stateful n’autorise en retour que les flux correspondant à une session sortante légitime.',
       },
     ],
     gemiBotHints: [
-      "WireGuard brille par sa légèreté (~4 000 lignes dans le noyau Linux), sa crypto moderne (ChaCha20) et son roaming instantané entre Wi-Fi et 5G.",
-      "Avec le PAT (NAT à surcharge de ports), chaque connexion reçoit un numéro de port source distinct pour que le routeur sache à quel PC rendre la réponse.",
-      "Un pare-feu Stateful bloque toute connexion entrante imprévue tout en autorisant automatiquement le retour d'une requête initiée depuis le LAN.",
+      "Ne partage jamais la clé privée (private.key) : seuls les blocs PublicKey sont échangés entre le serveur (/etc/wireguard/wg0.conf) et chaque client.",
+      "Un handshake WireGuard réussi ne suffit pas pour naviguer : vérifie toujours net.ipv4.ip_forward=1 et la règle iptables MASQUERADE si le ping vers le LAN ou Internet échoue.",
+      "Sur un Wi-Fi public (hôtel, gare, café), passe toujours en Full-Tunnel (AllowedIPs = 0.0.0.0/0) avec un serveur DNS interne pour bloquer tout sniffing et toute fuite DNS.",
     ],
     mapPosition: { x: 76, y: 82 },
   },
   {
     id: 19,
     slug: 'creer-serveur-configurer-pare-feu',
-    title: '19. Créer un Serveur, le Configurer & Placer un Pare-feu',
-    subtitle: 'Provisioning Linux/VPS, durcissement SSH, Reverse Proxy Nginx HTTPS, architecture DMZ & règles UFW',
+    title: '19. Cours Serveur : Création, Configuration Linux, Nginx & Pare-feu',
+    subtitle: 'Provisioning VPS/VM LTS, durcissement SSH Ed25519, service systemd, Reverse Proxy Nginx HTTPS, DMZ & UFW',
     category: 'Systèmes & Sécurité',
-    duration: '16 min',
+    duration: '22 min',
     xpReward: 340,
     badgeTitle: 'Bâtisseur de Serveurs & Pare-feu',
-    badgeDescription: 'A créé un serveur sécurisé, positionné une DMZ entre deux pare-feux et configuré les règles UFW.',
+    badgeDescription: 'A créé, configuré et durci un serveur Linux de production (SSH, systemd, Nginx HTTPS, DMZ & UFW).',
     videoTitle: 'Création serveur, configuration Nginx/SSH & placement Pare-feu DMZ en animation',
     videoDuration: '2 min 20',
     gameTitle: 'Déploie & Blinde ton Serveur',
-    notions: ['Provisioning Serveur (VPS / VM)', 'Durcissement SSH & sudo', 'Reverse Proxy Nginx & HTTPS', 'Placement Pare-feu, DMZ & UFW'],
+    notions: [
+      'Provisioning Serveur Linux LTS & DNS',
+      'Durcissement SSH Ed25519 & sudo',
+      'Service systemd & Reverse Proxy Nginx HTTPS',
+      'Architecture DMZ, UFW & audit nmap/ss',
+    ],
     summary:
-      'De la création d’une machine serveur vierge jusqu’à sa mise en production sécurisée : apprenez en animation comment choisir l’OS, sécuriser SSH, configurer Nginx en HTTPS, placer stratégiquement le pare-feu en architecture DMZ et appliquer la règle « Tout bloquer par défaut » avec UFW.',
+      'De la création d’une machine serveur vierge jusqu’à sa mise en production sécurisée : apprenez étape par étape à provisionner Ubuntu/Debian LTS, durcir SSH par clé Ed25519, isoler votre application en service systemd derrière Nginx HTTPS, configurer UFW en « Deny by Default » et déployer en direct dans le lab serveur temps réel.',
     keyTakeaways: [
       {
-        term: 'Création & OS Serveur (LTS)',
-        detail: 'On déploie sur un serveur physique ou une VM/VPS Cloud avec un OS stable à support long (Ubuntu Server LTS / Debian) et une adresse IP statique.',
+        term: 'Création, OS LTS & DNS',
+        detail: 'On déploie sur un serveur physique ou une VM/VPS Cloud avec un OS stable à support long (Ubuntu Server 24.04 LTS / Debian 12), une IP statique et un enregistrement DNS A pointant le domaine vers le serveur.',
       },
       {
         term: 'Durcissement SSH dès la 1re minute',
-        detail: 'Créer un utilisateur non-root avec sudo, authentifier par clé SSH Ed25519 et désactiver PermitRootLogin et les mots de passe dans /etc/ssh/sshd_config.',
+        detail: 'Créer un utilisateur non-root avec sudo, déployer une clé SSH Ed25519 puis désactiver PermitRootLogin et PasswordAuthentication dans /etc/ssh/sshd_config.d/99-hardening.conf (avec Fail2ban).',
       },
       {
-        term: 'Où placer le Pare-feu ? (DMZ)',
-        detail: 'En défense en profondeur : Internet → Pare-feu Périmétrique (FW1) → Zone DMZ (Serveur Web Nginx) → Pare-feu Interne (FW2) → Réseau Privé (Base de données).',
+        term: 'Service systemd & Bind local (127.0.0.1)',
+        detail: 'L’application tourne sous un compte dédié via systemd (Restart=always) et écoute uniquement sur 127.0.0.1:3000 afin de ne jamais être joignable en direct depuis Internet.',
       },
       {
-        term: 'Politique UFW « Deny by Default »',
-        detail: 'Toujours commencer par ufw default deny incoming, puis n’ouvrir que 443/tcp (HTTPS), 80/tcp (redirection) et 22/tcp restreint à votre IP admin ou VPN.',
+        term: 'Reverse Proxy Nginx & Certificat TLS 1.3',
+        detail: 'Nginx termine le chiffrement HTTPS sur le port 443 (Certbot Let’s Encrypt), force la redirection HTTP 301 → HTTPS, ajoute HSTS et relaie les requêtes propres vers 127.0.0.1:3000.',
+      },
+      {
+        term: 'Où placer le Pare-feu ? (DMZ & UFW)',
+        detail: 'Internet → Pare-feu Périmétrique (FW1) → Zone DMZ (Nginx) → Pare-feu Interne (FW2) → LAN privé (PostgreSQL :5432). Côté hôte : ufw default deny incoming, ouvrir uniquement 22/80/443.',
       },
     ],
     gemiBotHints: [
-      'Règle d’or du pare-feu : bloquez TOUT le trafic entrant par défaut (ufw default deny incoming) puis n’ouvrez que les ports strictement nécessaires.',
-      'Ne placez jamais une base de données (ports 3306 / 5432) dans la DMZ ni exposée sur Internet : elle doit rester derrière le pare-feu interne.',
-      'Activez toujours la règle SSH avant de lancer « ufw enable », sinon vous risquez de vous enfermer hors de votre propre serveur !',
+      'Règle d’or du pare-feu : bloquez TOUT le trafic entrant par défaut (ufw default deny incoming) puis n’ouvrez que 443/tcp, 80/tcp et 22/tcp restreint à votre IP admin ou VPN.',
+      'Ne placez jamais une base de données (3306 / 5432) ni le port applicatif (3000) exposés sur 0.0.0.0 côté Internet : vérifiez toujours vos sockets avec « ss -tulpn » et « nmap ».',
+      'Testez votre nouvelle connexion SSH par clé dans un second terminal et autorisez 22/tcp dans UFW AVANT de fermer votre session ou de lancer « ufw enable ».',
     ],
     mapPosition: { x: 89, y: 76 },
   },
@@ -1115,6 +1209,375 @@ export const ISLANDS: IslandModule[] = [
       'Authentifié ≠ Autorisé : vérifier que le JWT est valide ne suffit pas, il faut aussi vérifier que l’utilisateur est bien propriétaire de la ressource demandée (anti-IDOR).',
     ],
     mapPosition: { x: 40, y: 84 },
+  },
+  {
+    id: 23,
+    slug: 'securite-messagerie-spf-dkim-dmarc',
+    title: '23. Sécurité Messagerie (SPF, DKIM, DMARC) & En-têtes',
+    subtitle: 'Priorité 1 · Anti-spoofing DNS, alignement DMARC p=reject, MTA-STS & analyse forensique BEC',
+    category: 'SOC & Messagerie',
+    duration: '18 min',
+    xpReward: 380,
+    badgeTitle: 'Défenseur Messagerie & DNS',
+    badgeDescription: 'A verrouillé un domaine avec SPF -all, DKIM 2048 bits, DMARC p=reject strict et neutralisé une fraude BEC.',
+    videoTitle: 'Cours complet 6 étapes + Lab temps réel SPF/DKIM/DMARC',
+    videoDuration: 'Lab live',
+    gameTitle: 'Lab Messagerie (SPF, DKIM, DMARC & BEC)',
+    notions: ['SPF (-all & limite 10 lookups)', 'Signature DKIM RSA-2048', 'Alignement DMARC p=reject', 'Analyse en-têtes SMTP & MTA-STS'],
+    summary:
+      'Plus de 80 % des intrusions débutent par un e-mail usurpé ou une fraude au président. Apprenez à configurer SPF, DKIM, DMARC et MTA-STS dans le DNS, puis à disséquer les en-têtes SMTP suspects en conditions réelles.',
+    keyTakeaways: [
+      {
+        term: 'SPF strict (-all) & limite de 10 lookups',
+        detail: 'Listez uniquement les IP autorisées à envoyer pour votre domaine, aplatissez les include pour ne jamais dépasser 10 requêtes DNS (PermError) et terminez par -all.',
+      },
+      {
+        term: 'DKIM RSA 2048 bits',
+        detail: 'Signe cryptographiquement les en-têtes et le corps du message côté serveur d’envoi ; la clé publique est publiée sur <sélecteur>._domainkey.<domaine>.',
+      },
+      {
+        term: 'Alignement DMARC (p=reject)',
+        detail: 'Impose que le domaine visible (From) corresponde au domaine authentifié par SPF ou DKIM, garantissant le blocage des usurpations BEC.',
+      },
+      {
+        term: 'Lecture d’en-têtes & MTA-STS',
+        detail: 'Lisez toujours les lignes Received de bas en haut pour trouver la véritable IP émettrice, surveillez les divergences Reply-To et forcez TLS avec MTA-STS.',
+      },
+    ],
+    gemiBotHints: [
+      'Commencez toujours par vérifier le nombre de lookups SPF : au-delà de 10 requêtes DNS, SPF renvoie PermError et cesse de protéger le domaine.',
+      'Passez DMARC en mode p=none puis p=quarantine avec rapports rua avant d’activer p=reject à 100 % en production.',
+      'Dans un e-mail de fraude au président, comparez systématiquement les champs From, Return-Path et Reply-To.',
+    ],
+    mapPosition: { x: 24, y: 12 },
+  },
+  {
+    id: 24,
+    slug: 'threat-hunting-sigma-yara',
+    title: '24. Threat Hunting, Règles Sigma & YARA',
+    subtitle: 'Priorité 2 · Detection Engineering, conversion SIEM multi-plateforme, chasse proactive & signatures binaires',
+    category: 'SOC & Threat Hunting',
+    duration: '20 min',
+    xpReward: 400,
+    badgeTitle: 'Ingénieur Détection Sigma & YARA',
+    badgeDescription: 'A écrit une règle Sigma sans faux positifs, assemblé une signature YARA PE (MZ) et validé le replay Sysmon.',
+    videoTitle: 'Cours complet 6 étapes + Lab temps réel Sigma & YARA',
+    videoDuration: 'Lab live',
+    gameTitle: 'Lab Threat Hunting (Sigma, YARA & Replay)',
+    notions: ['Règles Sigma YAML agnostiques', 'Corrélation ParentImage (MITRE ATT&CK)', 'Réduction des faux positifs SOC', 'Signatures binaires YARA (0x5A4D)'],
+    summary:
+      'Passez d’analyste réactif à Threat Hunter : apprenez à concevoir des règles Sigma portables sur tous les SIEM (Sentinel, Splunk, Elastic), éliminez la fatigue d’alerte et écrivez des signatures YARA ciblées.',
+    keyTakeaways: [
+      {
+        term: 'Sigma : le standard YAML universel',
+        detail: 'Une seule règle Sigma se compile en KQL (Sentinel), SPL (Splunk) ou Lucene (Elastic) tout en restant versionnée dans Git.',
+      },
+      {
+        term: 'Corrélation Processus Parent / Enfant',
+        detail: 'Croiser ParentImage (ex. WINWORD.EXE) et CommandLine (powershell -enc) distingue immédiatement une intrusion réelle d’une tâche d’administration.',
+      },
+      {
+        term: 'Tuning & Zéro Faux Positif',
+        detail: 'Ajoutez toujours des blocs filter_ explicites pour les comptes de déploiement légitimes (SCCM, GPO) afin de maintenir une précision SOC proche de 100 %.',
+      },
+      {
+        term: 'Règles YARA performantes',
+        detail: 'Filtrez en tête de condition sur l’en-tête binaire (uint16(0) == 0x5A4D pour un PE Windows) et combinez opcodes + chaînes rares pour éviter les faux positifs.',
+      },
+    ],
+    gemiBotHints: [
+      'Une règle trop large génère des dizaines de faux positifs par jour et finit ignorée : corrélez toujours le processus parent.',
+      'En YARA, placer uint16(0) == 0x5A4D en premier dans la condition accélère considérablement le scan en ignorant les fichiers non exécutables.',
+      'Rejouez systématiquement vos nouvelles règles sur un historique de logs (replay) avant de les activer en production.',
+    ],
+    mapPosition: { x: 46, y: 10 },
+  },
+  {
+    id: 25,
+    slug: 'forensics-reponse-incident-dfir',
+    title: '25. Forensics & Réponse à Incident (DFIR)',
+    subtitle: 'Priorité 3 · Ordre de volatilité RFC 3227, analyse mémoire Volatility 3, timeline EVTX/$MFT & Chaîne de preuve',
+    category: 'SOC & DFIR',
+    duration: '20 min',
+    xpReward: 420,
+    badgeTitle: 'Investigateur DFIR Certifié',
+    badgeDescription: 'A préservé la RAM avant isolation, scellé la chaîne de preuve SHA-256 et éradiqué une persistance sans perte d’artefacts.',
+    videoTitle: 'Cours complet 6 étapes + Lab temps réel DFIR',
+    videoDuration: 'Lab live',
+    gameTitle: 'Lab Forensics & Incident Response (DFIR)',
+    notions: ['Ordre de volatilité (RFC 3227)', 'Acquisition RAM & Volatility 3', 'Timeline Sysmon/EVTX & $MFT', 'Chaîne de preuve SHA-256 & Éradication'],
+    summary:
+      'Lors d’une compromission avérée, chaque clic maladroit détruit des preuves cruciales. Maîtrisez l’ordre de volatilité RFC 3227, capturez la mémoire vive avant l’isolation, scellez vos preuves SHA-256 et éradiquez la persistance.',
+    keyTakeaways: [
+      {
+        term: 'Ordre de volatilité (RFC 3227)',
+        detail: 'Collectez toujours du plus volatile au plus persistant : registres/RAM et connexions réseau d’abord, disque et sauvegardes ensuite. Ne redémarrez jamais à chaud.',
+      },
+      {
+        term: 'Analyse Mémoire (Volatility 3)',
+        detail: 'La RAM révèle les malwares fileless, les injections DLL, les commandes PowerShell désobfusquées et les sockets C2 actifs invisibles sur disque.',
+      },
+      {
+        term: 'Chaîne de preuve cryptographique',
+        detail: 'Générez immédiatement les empreintes SHA-256 de chaque artefact collecté avec date, auteur et stockage en lecture seule (WORM) pour garantir leur recevabilité.',
+      },
+      {
+        term: 'Éradication avant remise en service',
+        detail: 'Supprimez toutes les persistances (tâches planifiées, clés Run, services, comptes cachés) et réinitialisez les secrets avant de reconnecter le serveur au réseau.',
+      },
+    ],
+    gemiBotHints: [
+      'Ne redémarrez jamais une machine compromise avant d’avoir capturé la RAM : les malwares en mémoire et clés volatiles disparaîtraient instantanément.',
+      'Privilégiez l’isolation réseau via l’EDR (qui maintient un tunnel forensique chiffré) plutôt que de débrancher brutalement l’alimentation.',
+      'Scellez les empreintes SHA-256 avant de supprimer la persistance pour prouver l’intégrité de votre enquête.',
+    ],
+    mapPosition: { x: 14, y: 60 },
+  },
+  {
+    id: 26,
+    slug: 'infrastructure-as-code-terraform-ansible',
+    title: '26. Infrastructure as Code (Terraform & Ansible)',
+    subtitle: 'Priorité 4 · Provisionnement déclaratif HCL, Remote State verrouillé, DevSecOps tfsec & idempotence Ansible',
+    category: 'Cloud & DevSecOps',
+    duration: '18 min',
+    xpReward: 400,
+    badgeTitle: 'Architecte IaC & Automatisation',
+    badgeDescription: 'A sécurisé un State distant verrouillé, éliminé un SSH 0.0.0.0/0 et les secrets en clair, puis validé l’idempotence Ansible.',
+    videoTitle: 'Cours complet 6 étapes + Lab temps réel Terraform & Ansible',
+    videoDuration: 'Lab live',
+    gameTitle: 'Lab IaC (Terraform HCL & Ansible Idempotent)',
+    notions: ['Terraform (init / plan / apply)', 'Remote State chiffré + Lock', 'Scan DevSecOps (tfsec / Checkov)', 'Playbooks Ansible idempotents'],
+    summary:
+      'Déployer des serveurs manuellement à la souris est lent et source d’erreurs de sécurité. Apprenez à décrire votre infrastructure réseau et Cloud en code reproductible avec Terraform et à durcir vos OS en masse avec Ansible.',
+    keyTakeaways: [
+      {
+        term: 'Terraform provisionne, Ansible configure',
+        detail: 'Terraform crée le socle Cloud (VPC, VM, pare-feu, bases) de manière déclarative ; Ansible installe et durcit ensuite les logiciels à l’intérieur des serveurs.',
+      },
+      {
+        term: 'Remote State chiffré & verrouillé',
+        detail: 'Ne commitez jamais terraform.tfstate dans Git : hébergez-le dans un bucket chiffré avec un verrou distribué (DynamoDB / Blob Lock) pour éviter les corruptions.',
+      },
+      {
+        term: 'Sécurité dès le code (Shift-Left)',
+        detail: 'Intégrez tfsec ou Checkov en CI pour bloquer automatiquement les règles 0.0.0.0/0 sur SSH et externalisez tout mot de passe dans des variables sensitive.',
+      },
+      {
+        term: 'Idempotence Ansible',
+        detail: 'Un playbook bien écrit peut être exécuté 10 fois de suite sans casser la production : la deuxième exécution doit afficher changed=0.',
+      },
+    ],
+    gemiBotHints: [
+      'Un fichier terraform.tfstate contient souvent des secrets en clair : ne l’envoyez jamais sur GitHub/GitLab.',
+      'Testez toujours avec terraform plan et ansible-playbook --check (dry-run) avant d’appliquer en production.',
+      'Restreignez toujours l’accès SSH (22/tcp) à l’IP fixe de votre Bastion (/32) dans vos Security Groups Terraform.',
+    ],
+    mapPosition: { x: 28, y: 88 },
+  },
+  {
+    id: 27,
+    slug: 'iam-cloud-gestion-secrets-multicloud',
+    title: '27. IAM Cloud, Gestion des Secrets & Multi-Cloud',
+    subtitle: 'Priorité 5 · Moindre privilège JSON, conditions MFA, fédération OIDC sans clé statique, S3 BlockPublicAccess & Vault',
+    category: 'Cloud & Sécurité',
+    duration: '18 min',
+    xpReward: 420,
+    badgeTitle: 'Gardien IAM & Coffre Cloud',
+    badgeDescription: 'A supprimé les droits Wildcard *:*, imposé MFA & OIDC CI/CD, verrouillé le stockage objet et activé les secrets dynamiques Vault.',
+    videoTitle: 'Cours complet 6 étapes + Lab temps réel IAM Cloud & Vault',
+    videoDuration: 'Lab live',
+    gameTitle: 'Lab IAM Cloud, OIDC & Secrets Dynamiques',
+    notions: ['Moindre privilège IAM (anti-Wildcard)', 'Conditions MFA & STS temporaire', 'Fédération OIDC CI/CD (zéro clé fixe)', 'BlockPublicAccess & Vault TTL'],
+    summary:
+      'Dans le Cloud, l’identité est devenue le nouveau périmètre réseau. Apprenez à remplacer les permissions Wildcard dangereuses par le moindre privilège, éliminez les clés statiques CI/CD grâce à OIDC et automatisez la rotation des secrets avec Vault.',
+    keyTakeaways: [
+      {
+        term: 'Zéro Wildcard (*:*) en production',
+        detail: 'Limitez chaque rôle IAM aux seules actions exactes (ex. s3:GetObject) et à l’ARN précis de la ressource ciblée pour réduire drastiquement le rayon d’impact.',
+      },
+      {
+        term: 'Fédération OIDC au lieu de clés statiques',
+        detail: 'Remplacez les clés longue durée (AKIA...) dans GitHub/GitLab par des jetons STS éphémères (15 min) obtenus par fédération OIDC.',
+      },
+      {
+        term: 'Verrouillage du stockage objet',
+        detail: 'Activez BlockPublicAccess au niveau du compte et du bucket, chiffrez par KMS et auditez en continu avec un CSPM (Prowler / Defender for Cloud).',
+      },
+      {
+        term: 'Secrets dynamiques (Vault)',
+        detail: 'Générez des comptes de base de données à la volée avec un TTL d’1 heure et révocation automatique : même une fuite de log devient rapidement inoffensive.',
+      },
+    ],
+    gemiBotHints: [
+      'Un rôle avec Action: "*" et Resource: "*" équivaut à donner les clés complètes du compte Cloud au moindre script compromis.',
+      'Imposer aws:MultiFactorAuthPresent: true bloque l’exploitation d’un mot de passe volé sans second facteur.',
+      'Des identifiants générés dynamiquement par Vault expirent d’eux-mêmes au bout d’une heure, éliminant les mots de passe partagés permanents.',
+    ],
+    mapPosition: { x: 38, y: 58 },
+  },
+  {
+    id: 28,
+    slug: 'routage-avance-ospf-bgp-rpki-sdwan',
+    title: '28. Routage Avancé (OSPF, BGP, RPKI) & SD-WAN',
+    subtitle: 'Priorité 6 · Backbone OSPF Area 0, filtrage eBGP anti-Route Leak, validation RPKI/ROA, BFD 300 ms & bascule SD-WAN SLA',
+    category: 'Réseaux Avancés',
+    duration: '20 min',
+    xpReward: 450,
+    badgeTitle: 'Architecte Backbone BGP & SD-WAN',
+    badgeDescription: 'A convergé OSPF Area 0, filtré eBGP contre les Route Leaks, neutralisé un BGP Hijack par RPKI et activé la bascule SD-WAN.',
+    videoTitle: 'Cours complet 6 étapes + Lab temps réel OSPF, BGP & SD-WAN',
+    videoDuration: 'Lab live',
+    gameTitle: 'Lab Routage Core (OSPF, BGP, RPKI & SD-WAN)',
+    notions: ['OSPF Backbone Area 0 (IGP)', 'Peering eBGP & Prefix-List (EGP)', 'Sécurité RPKI / ROA (anti-Hijack)', 'BFD 300 ms & Pilotage SD-WAN SLA'],
+    summary:
+      'Maîtrisez le cœur d’Internet et des réseaux multi-sites d’entreprise : convergence interne OSPF, filtrage strict des annonces eBGP, défense cryptographique RPKI contre le BGP Hijacking et pilotage intelligent multi-liens en SD-WAN.',
+    keyTakeaways: [
+      {
+        term: 'IGP (OSPF) vs EGP (BGP)',
+        detail: 'OSPF optimise le chemin le plus court à l’intérieur de votre organisation (Area 0) ; BGP échange les préfixes IP publics entre Systèmes Autonomes (AS) sur Internet.',
+      },
+      {
+        term: 'Filtrage eBGP (Prefix-List)',
+        detail: 'Sans filtre strict en sortie, un routeur peut ré-annoncer les routes d’un opérateur vers un autre et provoquer un Route Leak mondial.',
+      },
+      {
+        term: 'RPKI / ROA contre le BGP Hijacking',
+        detail: 'Les enregistrements ROA signent cryptographiquement quel AS a le droit d’annoncer votre bloc IP : les routeurs rejettent immédiatement les annonces pirates RPKI Invalid.',
+      },
+      {
+        term: 'BFD & SD-WAN piloté par SLA',
+        detail: 'BFD détecte une coupure en 300 ms (au lieu de 90 s en BGP classique), et le SD-WAN bascule automatiquement les flux critiques d’un MPLS dégradé vers une fibre saine.',
+      },
+    ],
+    gemiBotHints: [
+      'En OSPF, toutes les zones doivent se raccorder au backbone Area 0.0.0.0 pour échanger leurs routes sans boucle.',
+      'Appliquez toujours un prefix-list en sortie sur vos sessions eBGP pour n’annoncer que vos propres blocs IP.',
+      'Activer RPKI / ROA permet à votre routeur de dropper instantanément une annonce pirate comme celle d’AS 66600.',
+    ],
+    mapPosition: { x: 66, y: 46 },
+  },
+  {
+    id: 29,
+    slug: 'administration-linux-complete',
+    title: '29. Administration Linux (Système, Permissions, Systemd & LVM)',
+    subtitle: 'Hiérarchie FHS, comptes sudo, droits chmod/chown/ACL, services systemd, stockage LVM à chaud, cron & diagnostic',
+    category: 'Systèmes Linux',
+    duration: '20 min',
+    xpReward: 380,
+    badgeTitle: 'Administrateur Linux Confirmé',
+    badgeDescription: 'A sécurisé un compte sudo, verrouillé /srv/app en 750, réparé un service systemd, étendu LVM à chaud et planifié cron.',
+    videoTitle: 'Cours complet 6 étapes + Lab temps réel Administration Linux',
+    videoDuration: 'Lab live',
+    gameTitle: 'Lab Administration Linux (Systemd, LVM & Droits)',
+    notions: ['Hiérarchie FHS & Sudo', 'Permissions chmod / chown / ACL', 'Services systemd & journalctl', 'Volumes LVM, Cron & Diagnostic ss/ip'],
+    summary:
+      'Maîtrisez l’administration quotidienne d’un serveur Linux de production : création de comptes sudo, gestion fine des permissions fichiers, création d’unités systemd, extension de disques LVM à chaud et diagnostic des journaux.',
+    keyTakeaways: [
+      {
+        term: 'Moindre privilège & comptes sudo',
+        detail: 'Désactivez toujours PermitRootLogin dans sshd_config et administrez via un compte nominatif traçable membre du groupe sudo.',
+      },
+      {
+        term: 'Permissions octales & ACL',
+        detail: 'Appliquez 750 sur les dossiers applicatifs, 640 sur les configurations et 600 impératif sur toute clé privée SSH.',
+      },
+      {
+        term: 'Systemd & journalctl',
+        detail: 'Pilotez vos services avec systemctl enable --now, configurez Restart=on-failure et analysez les incidents via journalctl -u.',
+      },
+      {
+        term: 'Extension LVM à chaud',
+        detail: 'Agrandissez une partition /var/log saturée sans redémarrer grâce à lvextend -L +20G -r.',
+      },
+    ],
+    gemiBotHints: [
+      'Ne laissez jamais un répertoire applicatif en chmod 777 : n’importe quel utilisateur local pourrait modifier le code ou injecter un script.',
+      'Si un service ne démarre pas, lancez toujours systemctl status puis journalctl -u <service> -n 30 pour lire la cause exacte.',
+      'En cas de saturation disque, pensez à vérifier aussi les inodes (df -i) en plus de l’espace libre (df -h).',
+    ],
+    mapPosition: { x: 26, y: 43 },
+  },
+  {
+    id: 30,
+    slug: 'windows-server-administration-roles',
+    title: '30. Windows Server (Installation, Rôles DNS/DHCP/SMB, IIS & PowerShell)',
+    subtitle: 'Configuration initiale PowerShell, rôles DNS & DHCP, partages SMB3 chiffrés + NTFS, IIS HTTPS, WinRM & Pare-feu Defender',
+    category: 'Systèmes Windows',
+    duration: '20 min',
+    xpReward: 390,
+    badgeTitle: 'Administrateur Windows Server',
+    badgeDescription: 'A configuré SRV-WIN-01 en IP fixe, déployé DNS/DHCP, chiffré un partage SMB3/NTFS, publié IIS HTTPS et activé le Pare-feu Defender.',
+    videoTitle: 'Cours complet 6 étapes + Lab temps réel Windows Server',
+    videoDuration: 'Lab live',
+    gameTitle: 'Lab Windows Server (DNS/DHCP, SMB3, IIS & WFW)',
+    notions: ['PowerShell & Server Core (IP fixe)', 'Rôles DNS & DHCP Entreprise', 'Serveur de fichiers SMB3 + NTFS', 'IIS HTTPS, WinRM & Pare-feu Defender'],
+    summary:
+      'Déployez et administrez Windows Server comme en entreprise : configuration réseau PowerShell, rôles essentiels DNS et DHCP, partage de fichiers chiffré SMB3 avec droits NTFS, serveur Web IIS en HTTPS et supervision Event Viewer.',
+    keyTakeaways: [
+      {
+        term: 'Configuration initiale rigoureuse',
+        detail: 'Un serveur Windows doit porter un nom explicite, une adresse IPv4 fixe et un DNS fiable avant toute installation de rôle.',
+      },
+      {
+        term: 'Rôles DNS & DHCP',
+        detail: 'DNS assure la résolution interne (cyberland.local) et DHCP distribue automatiquement les configurations IP/passerelle/DNS au parc.',
+      },
+      {
+        term: 'SMB3 chiffré + NTFS (zéro SMBv1)',
+        detail: 'Désactivez systématiquement SMBv1, activez EncryptData sur vos partages SMB3 et combinez permissions de partage + droits NTFS.',
+      },
+      {
+        term: 'IIS HTTPS, WinRM & Pare-feu',
+        detail: 'Gardez les 3 profils du Pare-feu Windows Defender actifs, publiez vos portails en HTTPS (443) et auditez Event Viewer via Get-WinEvent.',
+      },
+    ],
+    gemiBotHints: [
+      'Sous Windows Server, l’autorisation effective d’un partage réseau est toujours l’intersection la plus restrictive entre Partage SMB et NTFS.',
+      'Ne désactivez jamais le Pare-feu Windows Defender : créez plutôt des règles ciblées par port avec New-NetFirewallRule.',
+      'Désactiver SMBv1 bloque des vecteurs d’attaques critiques historiques comme EternalBlue / WannaCry.',
+    ],
+    mapPosition: { x: 46, y: 66 },
+  },
+  {
+    id: 31,
+    slug: 'active-directory-deploiement-gpo-securite',
+    title: '31. Active Directory Complet (AD DS, OU/AGDLP, GPO, Kerberos & LAPS)',
+    subtitle: 'Promotion Contrôleur de Domaine, architecture OU & groupes AGDLP, stratégies GPO (LSDOU), Kerberos AES-256/LDAPS, Tiering & LAPS',
+    category: 'Identité & AD',
+    duration: '22 min',
+    xpReward: 420,
+    badgeTitle: 'Architecte & Défenseur Active Directory',
+    badgeDescription: 'A promu DC01, structuré les OU/AGDLP, déployé les GPO LSDOU, forcé Kerberos AES-256/LDAPS et verrouillé l’AD avec Tiering + LAPS.',
+    videoTitle: 'Cours complet 6 étapes + Lab temps réel Active Directory',
+    videoDuration: 'Lab live',
+    gameTitle: 'Lab Active Directory (AD DS, GPO, Kerberos & LAPS)',
+    notions: ['Promotion AD DS & Corbeille AD', 'Arborescence OU & Modèle AGDLP', 'Déploiement GPO (Ordre LSDOU)', 'Kerberos AES-256, LDAPS, Tiering & LAPS'],
+    summary:
+      'Passez à la pratique complète d’Active Directory : installez et promouvez une forêt AD DS, organisez vos OU et groupes selon AGDLP, appliquez des GPO de sécurité, chiffrez Kerberos/LDAPS et protégez l’annuaire avec le Tiering et Windows LAPS.',
+    keyTakeaways: [
+      {
+        term: 'Promotion AD DS & Corbeille AD',
+        detail: 'Déployez au moins 2 contrôleurs de domaine pour la redondance et activez la Corbeille AD immédiatement après la création de la forêt.',
+      },
+      {
+        term: 'OU structurées & règle AGDLP',
+        detail: 'Séparez Tier 0, Tier 1 et Tier 2 en OU dédiées et imbriquez Comptes → Groupes Globaux → Groupes Locaux de Domaine → Permissions.',
+      },
+      {
+        term: 'GPO & ordre LSDOU',
+        detail: 'Local → Site → Domaine → OU : testez toujours l’application effective sur un poste avec gpresult /R.',
+      },
+      {
+        term: 'Kerberos AES-256, Tiering & LAPS',
+        detail: 'Bannissez RC4, forcez LDAPS (636), déployez Windows LAPS (mot de passe admin local unique) et migrez les services vers des comptes gMSA.',
+      },
+    ],
+    gemiBotHints: [
+      'Si un poste échoue à joindre le domaine, vérifiez d’abord que son serveur DNS primaire pointe bien vers l’IP du Contrôleur de Domaine.',
+      'Le Tiering interdit à un Admin du Domaine (Tier 0) de se connecter sur un poste bureautique (Tier 2), coupant net le vol d’identifiants en mémoire.',
+      'Activez Windows LAPS sur tous les postes afin qu’un mot de passe administrateur local compromis ne puisse jamais être réutilisé ailleurs.',
+    ],
+    mapPosition: { x: 89, y: 31 },
   },
 ];
 
