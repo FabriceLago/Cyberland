@@ -142,16 +142,167 @@
         "createdAt",
         "updatedAt"
       ]
+    },
+    "UserRole": {
+      "title": "UserRole",
+      "description": "Admin-managed RBAC role assignment enforced at the Firestore database layer.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Target Firebase UID whose role is controlled."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["learner", "instructor", "admin"],
+          "description": "Database-enforced RBAC role."
+        },
+        "assignedBy": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Verified admin UID who granted or modified the role."
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Optional justification note for the role assignment."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "userId",
+        "role",
+        "assignedBy",
+        "note",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ProtectedAdminVault": {
+      "title": "ProtectedAdminVault",
+      "description": "Admin-only protected configuration document (grading policies & exam governance) strictly enforced by Firestore rules.",
+      "type": "object",
+      "properties": {
+        "policyName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Human-readable name of the protected administrative policy."
+        },
+        "minPassingScore": {
+          "type": "number",
+          "description": "Minimum passing score out of 20 for official certification."
+        },
+        "requireSignedTransfers": {
+          "type": "boolean",
+          "description": "Whether HMAC-SHA256 server-signed transfer codes are required."
+        },
+        "strictZeroTrustMode": {
+          "type": "boolean",
+          "description": "Whether strict backend + database authorization enforcement is active."
+        },
+        "updatedBy": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Verified admin UID who last updated the vault document."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server last update timestamp."
+        }
+      },
+      "required": [
+        "policyName",
+        "minPassingScore",
+        "requireSignedTransfers",
+        "strictZeroTrustMode",
+        "updatedBy",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SecurityAuditLog": {
+      "title": "SecurityAuditLog",
+      "description": "Append-only administrative security audit record.",
+      "type": "object",
+      "properties": {
+        "actorUid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Verified admin UID who executed the audited action."
+        },
+        "action": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "Short action code (e.g., ROLE_UPDATED, VAULT_UPDATED)."
+        },
+        "targetId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Identifier of the affected resource."
+        },
+        "outcome": {
+          "type": "string",
+          "enum": ["ALLOW", "DENY"],
+          "description": "Decision outcome recorded in the audit log."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        }
+      },
+      "required": [
+        "actorUid",
+        "action",
+        "targetId",
+        "outcome",
+        "createdAt"
+      ]
     }
   },
   "firestore": {
     "/user_progress/{userId}": {
       "schema": { "$ref": "#/entities/UserProgress" },
-      "description": "Owner-only cloud progress sync for authenticated learners."
+      "description": "Owner-only (plus admin audit read) cloud progress sync for authenticated learners."
     },
     "/leaderboard/{userId}": {
       "schema": { "$ref": "#/entities/LeaderboardEntry" },
       "description": "PII-free online XP and Speedrun leaderboard entries."
+    },
+    "/roles/{userId}": {
+      "schema": { "$ref": "#/entities/UserRole" },
+      "description": "Database-enforced RBAC role assignments writable exclusively by verified Admins."
+    },
+    "/protected_admin_vault/{docId}": {
+      "schema": { "$ref": "#/entities/ProtectedAdminVault" },
+      "description": "Admin-only protected configuration vault proving database-side authorization."
+    },
+    "/security_audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/SecurityAuditLog" },
+      "description": "Append-only immutable administrative security audit records."
     }
   }
 }

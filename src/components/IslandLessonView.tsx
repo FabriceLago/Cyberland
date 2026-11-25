@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, CheckCircle2, Film, Gamepad2, BookOpen, Star, Lock, Terminal, ShieldCheck, ExternalLink, Server } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, Film, Gamepad2, BookOpen, Star, Lock, Terminal, ShieldCheck, ExternalLink, Server, FileSearch } from 'lucide-react';
 import {
   ASSETS,
   CareerTrack,
@@ -37,6 +37,7 @@ import { VpnConfigLiveLab } from './labs/VpnConfigLiveLab';
 import { ServerConfigLiveLab } from './labs/ServerConfigLiveLab';
 import { ExpertAdvancedLiveLab } from './labs/ExpertAdvancedLiveLab';
 import { ADVANCED_COURSE_GUIDES, AdvancedLabId } from '../data/advancedCoursesData';
+import { getMissionForIsland } from '../data/proMissionsData';
 import { playClick } from '../utils/sound';
 
 interface IslandLessonViewProps {
@@ -51,6 +52,7 @@ interface IslandLessonViewProps {
   onOpenVpnLab?: () => void;
   onOpenServerLab?: () => void;
   onOpenAdvancedLab?: (labId: AdvancedLabId) => void;
+  onOpenMission?: (missionId: string) => void;
   onAwardLabXp?: (xp: number) => void;
 }
 
@@ -68,9 +70,11 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
   onOpenVpnLab,
   onOpenServerLab,
   onOpenAdvancedLab,
+  onOpenMission,
   onAwardLabXp,
 }) => {
   const advancedGuide = ADVANCED_COURSE_GUIDES[island.id];
+  const linkedMission = getMissionForIsland(island.id);
   const [activeTab, setActiveTab] = useState<ModuleTab>(advancedGuide ? 'notions' : 'animation');
   const [coverErr, setCoverErr] = useState(false);
 
@@ -1532,6 +1536,40 @@ nmap -Pn 203.0.113.42                  # Confirme 0 port sensible exposé`}
               onAwardLabXp?.(110);
             }}
           />
+        </section>
+      )}
+
+      {/* Operational Bridge: Apply Course Theory on a Real SOC Incident */}
+      {onOpenMission && linkedMission && (
+        <section className="rounded-2xl border border-slate-200 dark:border-cyan-500/35 bg-white dark:bg-slate-900 p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5 min-w-0">
+            <div className="flex flex-wrap items-center gap-x-2 text-xs font-mono tabular-nums text-sky-700 dark:text-cyan-400">
+              <span className="font-bold">Mise en pratique terrain · {linkedMission.ticketId}</span>
+              <span aria-hidden="true">·</span>
+              <span>{linkedMission.severity}</span>
+              <span aria-hidden="true">·</span>
+              <span>{linkedMission.logs.length} journaux SIEM</span>
+            </div>
+            <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-100">
+              {linkedMission.title}
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+              Passez de la théorie à l&apos;investigation réelle chez {linkedMission.organization} :
+              corrélez les journaux bruts, extrayez les IOC en ligne de commande et déployez la règle
+              Sigma (+{linkedMission.xpReward} XP).
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              playClick();
+              onOpenMission(linkedMission.id);
+            }}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg bg-sky-700 hover:bg-sky-800 dark:bg-cyan-400 dark:hover:bg-cyan-300 text-white dark:text-slate-950 transition-colors whitespace-nowrap shrink-0"
+          >
+            <FileSearch className="w-4 h-4 shrink-0" />
+            Enquêter sur cet incident
+          </button>
         </section>
       )}
 

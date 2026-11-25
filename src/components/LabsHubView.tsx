@@ -67,12 +67,15 @@ import { SocSurvivalLab } from './labs/SocSurvivalLab';
 import { VpnConfigLiveLab } from './labs/VpnConfigLiveLab';
 import { ServerConfigLiveLab } from './labs/ServerConfigLiveLab';
 import { ExpertAdvancedLiveLab } from './labs/ExpertAdvancedLiveLab';
+import { InteractiveTopologyLab } from './labs/InteractiveTopologyLab';
+import { ServerDbAuthLab } from './labs/ServerDbAuthLab';
+import { SocLiveMonitoringLab } from './labs/SocLiveMonitoringLab';
 import { AdvancedLabId } from '../data/advancedCoursesData';
 import { CyberAttackId } from '../data/cyberAttackSimulations';
 import { EASE_SWISS, SPRING_SNAPPY } from './MotionPrimitives';
 import { playClick } from '../utils/sound';
 
-export type LabCategory = 'speedrun' | 'attacks' | 'tools';
+export type LabCategory = 'monitoring' | 'speedrun' | 'attacks' | 'tools';
 
 interface LabsHubViewProps {
   initialCategory?: LabCategory;
@@ -82,6 +85,7 @@ interface LabsHubViewProps {
   onContainCrisis?: () => void;
   onMasterSqli?: () => void;
   onNeutralizeCyberAttack?: (attackId: CyberAttackId) => void;
+  onCompleteTopology?: () => void;
   onAwardLabXp?: (xp: number) => void;
   onCaptureCtfFlag?: (flagId: string, xp: number) => void;
   bestSocSurvivalScore?: number;
@@ -118,6 +122,8 @@ export type LabTab =
   | 'dockersec'
   | 'vpnconfig'
   | 'serverconfig'
+  | 'topology'
+  | 'authz'
   | AdvancedLabId;
 
 const ADVANCED_LAB_IDS: AdvancedLabId[] = [
@@ -159,6 +165,7 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
   onContainCrisis,
   onMasterSqli,
   onNeutralizeCyberAttack,
+  onCompleteTopology,
   onAwardLabXp,
   onCaptureCtfFlag,
   bestSocSurvivalScore = 0,
@@ -168,7 +175,7 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
   xpBoostRemainingSec = 0,
   onCompleteSpeedrun,
 }) => {
-  const [category, setCategory] = useState<LabCategory>(initialCategory ?? 'speedrun');
+  const [category, setCategory] = useState<LabCategory>(initialCategory ?? 'monitoring');
   const [activeLab, setActiveLab] = useState<LabTab>(initialLab ?? 'xss');
   const [neutralizedAttacks, setNeutralizedAttacks] = useState<CyberAttackId[]>([]);
 
@@ -195,6 +202,8 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
   ];
 
   const toolTabs: { id: LabTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: 'authz', label: 'Contrôle d’Accès Serveur & BDD (AuthZ)', icon: ShieldAlert },
+    { id: 'topology', label: 'Topologie Interactive (Routeurs · Pare-feu · Paquets)', icon: Network },
     { id: 'linuxadmin', label: 'Linux Live (Admin, Systemd & LVM)', icon: TerminalSquare },
     { id: 'winserver', label: 'Windows Server Live (DNS/DHCP/SMB)', icon: Server },
     { id: 'admastery', label: 'Active Directory Live (AD DS/GPO)', icon: FolderTree },
@@ -235,7 +244,7 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
     playClick();
     setCategory(nextCat);
     if (nextCat === 'attacks') setActiveLab('xss');
-    if (nextCat === 'tools') setActiveLab('serverconfig');
+    if (nextCat === 'tools') setActiveLab('authz');
   };
 
   const handleNeutralize = (attackId: CyberAttackId) => {
@@ -252,17 +261,24 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-1.5">
             <p className="text-xs font-mono font-medium text-sky-700 dark:text-cyan-400">
-              41 ateliers tactiques · Linux · Windows Server · Active Directory · 6 Labs Expert · {neutralizedAttacks.length} / {CYBER_ATTACK_IDS.length} attaques live neutralisées cette session
+              SOC Live Monitoring · 44 ateliers tactiques · AuthZ Serveur &amp; BDD · Topologie Interactive · Linux · Windows Server · Active Directory · {neutralizedAttacks.length} / {CYBER_ATTACK_IDS.length} attaques live neutralisées cette session
             </p>
             <h1 className="font-display text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100">
               Laboratoires Réseaux, Cloud &amp; Cyber
             </h1>
           </div>
 
-          {/* 3-Category Switcher with Tactical SOC sliding pill */}
+          {/* 4-Category Switcher with Tactical SOC sliding pill */}
           <div className="inline-flex flex-wrap items-center gap-1 p-1 rounded-xl bg-slate-200/80 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-fit">
             {(
               [
+                {
+                  id: 'monitoring',
+                  label: 'SOC Live Monitoring',
+                  icon: Radar,
+                  activeBg: 'bg-sky-700 dark:bg-cyan-400',
+                  activeText: 'text-white dark:text-slate-950',
+                },
                 {
                   id: 'speedrun',
                   label: 'Mode Speedrun (×XP)',
@@ -279,7 +295,7 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
                 },
                 {
                   id: 'tools',
-                  label: 'CTF & Outils (31)',
+                  label: 'CTF & Outils (33)',
                   icon: Wrench,
                   activeBg: 'bg-sky-600 dark:bg-cyan-500',
                   activeText: 'text-white dark:text-slate-950',
@@ -316,7 +332,7 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
           </div>
         </div>
 
-        {category !== 'speedrun' && (
+        {category !== 'speedrun' && category !== 'monitoring' && (
           <div
             role="tablist"
             aria-label="Choisir un laboratoire"
@@ -368,12 +384,22 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
 
       <AnimatePresence mode="wait">
         <motion.div
-          key={category === 'speedrun' ? 'speedrun' : `${category}-${activeLab}`}
+          key={
+            category === 'speedrun' || category === 'monitoring'
+              ? category
+              : `${category}-${activeLab}`
+          }
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.18, ease: EASE_SWISS }}
         >
+          {category === 'monitoring' && (
+            <SocLiveMonitoringLab
+              onCompleteInvestigation={(xp) => onAwardLabXp?.(xp)}
+            />
+          )}
+
           {category === 'speedrun' && (
             <SpeedrunModeLab
               bestSpeedrunByCircuit={bestSpeedrunByCircuit}
@@ -383,7 +409,7 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
             />
           )}
 
-          {category !== 'speedrun' && isCyberAttackId(activeLab) && (
+          {category !== 'speedrun' && category !== 'monitoring' && isCyberAttackId(activeLab) && (
             <LiveAttackLab
               key={activeLab}
               attackId={activeLab}
@@ -393,56 +419,67 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
             />
           )}
 
-          {category !== 'speedrun' && activeLab === 'serverconfig' && (
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'authz' && (
+            <ServerDbAuthLab onCompleteHardening={() => onAwardLabXp?.(120)} />
+          )}
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'topology' && (
+            <InteractiveTopologyLab
+              onCompleteChallenges={() => {
+                onCompleteTopology?.();
+                onAwardLabXp?.(120);
+              }}
+            />
+          )}
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'serverconfig' && (
             <ServerConfigLiveLab onCompleteLab={() => onAwardLabXp?.(100)} />
           )}
-          {category !== 'speedrun' && activeLab === 'vpnconfig' && (
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'vpnconfig' && (
             <VpnConfigLiveLab onCompleteLab={() => onAwardLabXp?.(95)} />
           )}
-          {category !== 'speedrun' && isAdvancedLabId(activeLab) && (
+          {category !== 'speedrun' && category !== 'monitoring' && isAdvancedLabId(activeLab) && (
             <ExpertAdvancedLiveLab
               key={activeLab}
               labId={activeLab}
               onCompleteLab={() => onAwardLabXp?.(110)}
             />
           )}
-          {category !== 'speedrun' && activeLab === 'ctf' && (
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'ctf' && (
             <CtfGuidedLab onCaptureFlag={onCaptureCtfFlag} />
           )}
-          {category !== 'speedrun' && activeLab === 'survival' && (
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'survival' && (
             <SocSurvivalLab
               bestScore={bestSocSurvivalScore}
               onFinishRun={onFinishSocSurvival}
             />
           )}
-          {category !== 'speedrun' && activeLab === 'jwttls' && (
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'jwttls' && (
             <JwtTlsAuditorLab onCompleteAudit={() => onAwardLabXp?.(80)} />
           )}
-          {category !== 'speedrun' && activeLab === 'dockersec' && (
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'dockersec' && (
             <DockerHardeningLab onHardened={() => onAwardLabXp?.(85)} />
           )}
-          {category !== 'speedrun' && activeLab === 'nmap' && (
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'nmap' && (
             <NmapAuditLab onAuditComplete={() => onAwardLabXp?.(75)} />
           )}
-          {category !== 'speedrun' && activeLab === 'linux' && <LinuxAdminLab />}
-          {category !== 'speedrun' && activeLab === 'backup' && <BackupPraLab />}
-          {category !== 'speedrun' && activeLab === 'ddos' && <AntiDdosGame onWinBonusXp={onWinDdosXp} />}
-          {category !== 'speedrun' && activeLab === 'sqli' && <SqlInjectionLab onMasterSqli={onMasterSqli} />}
-          {category !== 'speedrun' && activeLab === 'crisis' && <CrisisResponseLab onContainCrisis={onContainCrisis} />}
-          {category !== 'speedrun' && activeLab === 'sandbox' && <NetworkArchitectSandboxLab />}
-          {category !== 'speedrun' && activeLab === 'packet' && <PacketSimulatorView />}
-          {category !== 'speedrun' && activeLab === 'wireshark' && <WiresharkTcpdumpLab />}
-          {category !== 'speedrun' && activeLab === 'azure' && <AzureMonitorLab />}
-          {category !== 'speedrun' && activeLab === 'terminal' && (
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'linux' && <LinuxAdminLab />}
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'backup' && <BackupPraLab />}
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'ddos' && <AntiDdosGame onWinBonusXp={onWinDdosXp} />}
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'sqli' && <SqlInjectionLab onMasterSqli={onMasterSqli} />}
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'crisis' && <CrisisResponseLab onContainCrisis={onContainCrisis} />}
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'sandbox' && <NetworkArchitectSandboxLab />}
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'packet' && <PacketSimulatorView />}
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'wireshark' && <WiresharkTcpdumpLab />}
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'azure' && <AzureMonitorLab />}
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'terminal' && (
             <NetworkTerminalLab onCompleteMissions={onCompleteTerminalMissions} />
           )}
-          {category !== 'speedrun' && activeLab === 'dhcp' && <DhcpNatLab />}
-          {category !== 'speedrun' && activeLab === 'http' && <HttpApiInspectorLab />}
-          {category !== 'speedrun' && activeLab === 'password' && <PasswordEntropyLab />}
-          {category !== 'speedrun' && activeLab === 'bandwidth' && <BandwidthCalculatorLab />}
-          {category !== 'speedrun' && activeLab === 'routing' && <DynamicRoutingLab />}
-          {category !== 'speedrun' && activeLab === 'architect' && <CloudArchitectLab />}
-          {category !== 'speedrun' && activeLab === 'ip' && <IpSubnetLab />}
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'dhcp' && <DhcpNatLab />}
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'http' && <HttpApiInspectorLab />}
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'password' && <PasswordEntropyLab />}
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'bandwidth' && <BandwidthCalculatorLab />}
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'routing' && <DynamicRoutingLab />}
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'architect' && <CloudArchitectLab />}
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'ip' && <IpSubnetLab />}
         </motion.div>
       </AnimatePresence>
     </div>

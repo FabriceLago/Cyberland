@@ -58,6 +58,8 @@ import {
   ISLANDS,
 } from '../data/courseData';
 import { getHighestUnlockedBadge } from '../data/expertiseBadges';
+import { PRO_MISSIONS } from '../data/proMissionsData';
+import { IMMERSION_COMPANY, IMMERSION_DAYS } from '../data/proImmersionData';
 import {
   getFriendlyFirstName,
   getHumanEncouragement,
@@ -72,6 +74,11 @@ import {
   EASE_SWISS,
 } from './MotionPrimitives';
 import { TacticalSocTelemetryBoard } from './TacticalSocTelemetryBoard';
+import {
+  ESSENTIAL_PATH_ISLAND_IDS,
+  EssentialPathSection,
+  getEssentialStepMetrics,
+} from './EssentialPathSection';
 import { playClick } from '../utils/sound';
 
 interface ArchipelagoViewProps {
@@ -104,7 +111,19 @@ interface ArchipelagoViewProps {
   onToggleReadableMode: () => void;
   onToggleProjectionMode: () => void;
   onChangeSpeechRate: (rate: number) => void;
+  completedMissionsCount?: number;
+  missionBestScores?: Record<string, number>;
+  completedImmersionDaysCount?: number;
+  topologyCompleted?: boolean;
+  bestDefenseScore?: number;
+  workspaceScope?: 'essential' | 'full';
+  onChangeWorkspaceScope?: (scope: 'essential' | 'full') => void;
   onSelectIsland: (islandId: number) => void;
+  onOpenDefense?: () => void;
+  onOpenImmersion?: () => void;
+  onOpenMissions?: (missionId?: string) => void;
+  onOpenTopologyLab?: () => void;
+  onOpenAuthzLab?: () => void;
   onOpenSimulator: () => void;
   onOpenExam: () => void;
   onOpenCertificate: () => void;
@@ -144,7 +163,19 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
   onToggleReadableMode,
   onToggleProjectionMode,
   onChangeSpeechRate,
+  completedMissionsCount = 0,
+  missionBestScores = {},
+  completedImmersionDaysCount = 0,
+  topologyCompleted = false,
+  bestDefenseScore = 0,
+  workspaceScope = 'essential',
+  onChangeWorkspaceScope,
   onSelectIsland,
+  onOpenDefense,
+  onOpenImmersion,
+  onOpenMissions,
+  onOpenTopologyLab,
+  onOpenAuthzLab,
   onOpenSimulator,
   onOpenExam,
   onOpenCertificate,
@@ -207,8 +238,47 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
   const maxStars = ISLANDS.length * 3;
   const progressPercent = Math.round((completedIslands.length / ISLANDS.length) * 100);
 
+  const isEssentialMode = workspaceScope === 'essential';
+  const essentialIslandSet = new Set<number>(ESSENTIAL_PATH_ISLAND_IDS);
+  const essentialMetrics = getEssentialStepMetrics({
+    completedIslands,
+    topologyCompleted,
+    completedImmersionDaysCount,
+    completedMissionsCount,
+    bestDefenseScore,
+    passedExamsCount,
+    bestExamScore,
+  });
+  const essentialCompletedIslandsCount = ESSENTIAL_PATH_ISLAND_IDS.filter((id) =>
+    completedIslands.includes(id)
+  ).length;
+
+  const handleTriggerEssentialNextAction = () => {
+    const target = essentialMetrics.nextAction.target;
+    if (target.kind === 'island') {
+      onSelectIsland(target.islandId);
+    } else if (target.kind === 'topology') {
+      onOpenTopologyLab?.();
+    } else if (target.kind === 'immersion') {
+      onOpenImmersion?.();
+    } else if (target.kind === 'missions') {
+      onOpenMissions?.();
+    } else if (target.kind === 'defense') {
+      onOpenDefense?.();
+    } else if (target.kind === 'exam') {
+      onOpenExam();
+    } else {
+      onOpenCertificate();
+    }
+  };
+
   const activeIslandInfo =
-    ISLANDS.find((i) => i.id === hoveredIslandId) ?? nextIsland;
+    ISLANDS.find((i) => i.id === hoveredIslandId) ??
+    (isEssentialMode
+      ? ISLANDS.find(
+          (i) => essentialIslandSet.has(i.id) && !completedIslands.includes(i.id)
+        ) ?? ISLANDS[0]
+      : nextIsland);
   const activeIslandPhase = getAnalystPhaseForIsland(activeIslandInfo.id);
 
   const groupedPhases = ANALYST_LEARNING_PHASES.map((phase) => {
@@ -333,7 +403,7 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
     <div className="space-y-12 pb-16">
       {/* Split Hero + Interactive Archipelago Map */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-        <div className="lg:col-span-5 flex flex-col justify-between space-y-5">
+        <div data-tour="tour-hero" className="lg:col-span-5 flex flex-col justify-between space-y-5">
           <div className="space-y-4">
             {/* Warm Personalized Greeting & Inline First-Name Personalization */}
             <div className="space-y-2 pb-3 border-b border-slate-200 dark:border-slate-800/90">
@@ -379,13 +449,54 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
               </p>
             </div>
 
+            {onChangeWorkspaceScope && (
+              <div
+                role="tablist"
+                aria-label="Périmètre d'apprentissage"
+                className="inline-flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 w-fit"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={isEssentialMode}
+                  onClick={() => {
+                    playClick();
+                    onChangeWorkspaceScope('essential');
+                  }}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap tabular-nums ${
+                    isEssentialMode
+                      ? 'bg-white dark:bg-slate-950 text-sky-800 dark:text-cyan-300 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Parcours Essentiel ({essentialMetrics.completedStepsCount}/6)
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={!isEssentialMode}
+                  onClick={() => {
+                    playClick();
+                    onChangeWorkspaceScope('full');
+                  }}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap tabular-nums ${
+                    !isEssentialMode
+                      ? 'bg-white dark:bg-slate-950 text-sky-800 dark:text-cyan-300 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Catalogue Complet ({ISLANDS.length} cours)
+                </button>
+              </div>
+            )}
+
             <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight text-slate-900 dark:text-slate-100 leading-[1.08]">
               L&apos;Archipel de Cyberland
             </h1>
             <p className="text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-prose">
-              Apprenez les réseaux, le Cloud et la cybersécurité comme sur le terrain :{' '}
-              {ISLANDS.length} étapes progressives, des schémas vivants et des ateliers concrets où
-              vous avez le droit de tester et d&apos;essayer.
+              {isEssentialMode
+                ? 'Commencez par un seul parcours complet et réellement fonctionnel : réseaux, topologie 2D, Linux/AD, semaine en poste, investigation SOC et diplôme — sans dispersion.'
+                : `Catalogue complet en réseaux, systèmes, Cloud et cybersécurité : ${ISLANDS.length} cours progressifs, laboratoires interactifs, immersion francophone et missions SOC.`}
             </p>
 
             {/* Compact Daily Pace Selector */}
@@ -424,47 +535,141 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                playClick();
-                onSelectIsland(nextIsland.id);
-              }}
-              className="inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-white bg-sky-700 hover:bg-sky-800 rounded-lg transition-colors whitespace-nowrap tabular-nums"
-            >
-              <Play className="w-4 h-4 shrink-0" />
-              {trackCompletedCount === 0
-                ? `Démarrer : ${getShortNumberedCourseName(nextIsland, selectedTrackId)}`
-                : trackCompletedCount === visibleIslands.length
-                ? `Revoir : ${getShortNumberedCourseName(16, selectedTrackId)}`
-                : `Continuer : ${getShortNumberedCourseName(nextIsland, selectedTrackId)}`}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                playClick();
-                onOpenSimulator();
-              }}
-              className="inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors whitespace-nowrap"
-            >
-              Laboratoires
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            {onOpenDemoVideo && (
+          {isEssentialMode ? (
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={() => {
                   playClick();
-                  onOpenDemoVideo();
+                  handleTriggerEssentialNextAction();
                 }}
-                className="inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold text-sky-800 dark:text-cyan-300 bg-sky-50 dark:bg-cyan-950/50 border border-sky-200 dark:border-cyan-500/40 hover:bg-sky-100 dark:hover:bg-cyan-900/50 rounded-lg transition-colors whitespace-nowrap"
+                className="inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-white dark:text-slate-950 bg-sky-700 hover:bg-sky-800 dark:bg-cyan-400 dark:hover:bg-cyan-300 rounded-lg transition-colors whitespace-nowrap tabular-nums"
               >
-                <PlayCircle className="w-4 h-4" />
-                Démo vidéo · 5 min
+                <Play className="w-4 h-4 shrink-0" />
+                {essentialMetrics.nextAction.ctaLabel}
               </button>
-            )}
-          </div>
+              {onOpenDefense && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClick();
+                    onOpenDefense();
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:border-rose-400 dark:hover:border-rose-500/60 rounded-lg transition-colors whitespace-nowrap shrink-0"
+                >
+                  <ShieldAlert className="w-4 h-4 text-rose-700 dark:text-rose-400 shrink-0" />
+                  Mode Défense Live
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  playClick();
+                  onSelectIsland(nextIsland.id);
+                }}
+                className="inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-white bg-sky-700 hover:bg-sky-800 rounded-lg transition-colors whitespace-nowrap tabular-nums"
+              >
+                <Play className="w-4 h-4 shrink-0" />
+                {trackCompletedCount === 0
+                  ? `Démarrer : ${getShortNumberedCourseName(nextIsland, selectedTrackId)}`
+                  : trackCompletedCount === visibleIslands.length
+                  ? `Revoir : ${getShortNumberedCourseName(16, selectedTrackId)}`
+                  : `Continuer : ${getShortNumberedCourseName(nextIsland, selectedTrackId)}`}
+              </button>
+              {onOpenDefense && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClick();
+                    onOpenDefense();
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 border border-rose-300 dark:border-rose-500/50 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors whitespace-nowrap shrink-0"
+                >
+                  <ShieldAlert className="w-4 h-4 text-rose-700 dark:text-rose-400 shrink-0" />
+                  Mode Défense Live
+                </button>
+              )}
+              {onOpenImmersion && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClick();
+                    onOpenImmersion();
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 border border-slate-300 dark:border-sky-500/50 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors whitespace-nowrap tabular-nums"
+                >
+                  <Briefcase className="w-4 h-4 text-sky-700 dark:text-sky-400 shrink-0" />
+                  Immersion Pro ({completedImmersionDaysCount}/{IMMERSION_DAYS.length} j)
+                </button>
+              )}
+              {onOpenMissions && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClick();
+                    onOpenMissions();
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 border border-slate-300 dark:border-cyan-500/45 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors whitespace-nowrap tabular-nums"
+                >
+                  <FileSearch className="w-4 h-4 text-sky-700 dark:text-cyan-400 shrink-0" />
+                  Missions Pro ({completedMissionsCount}/{PRO_MISSIONS.length})
+                </button>
+              )}
+              {onOpenTopologyLab && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClick();
+                    onOpenTopologyLab();
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 border border-slate-300 dark:border-emerald-500/45 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors whitespace-nowrap"
+                >
+                  <Network className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
+                  Topologie Réseau Live
+                </button>
+              )}
+              {onOpenAuthzLab && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClick();
+                    onOpenAuthzLab();
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 border border-slate-300 dark:border-amber-500/45 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors whitespace-nowrap"
+                >
+                  <ShieldCheck className="w-4 h-4 text-amber-700 dark:text-amber-400 shrink-0" />
+                  AuthZ Serveur &amp; BDD
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  playClick();
+                  onOpenSimulator();
+                }}
+                className="inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors whitespace-nowrap"
+              >
+                Laboratoires
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              {onOpenDemoVideo && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClick();
+                    onOpenDemoVideo();
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-3 text-sm font-semibold text-sky-800 dark:text-cyan-300 bg-sky-50 dark:bg-cyan-950/50 border border-sky-200 dark:border-cyan-500/40 hover:bg-sky-100 dark:hover:bg-cyan-900/50 rounded-lg transition-colors whitespace-nowrap"
+                >
+                  <PlayCircle className="w-4 h-4" />
+                  Démo vidéo · 5 min
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Active Map Preview Card */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 min-h-[158px]">
@@ -514,7 +719,10 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
         </div>
 
         {/* Interactive Illustrated Archipelago Map */}
-        <div className="lg:col-span-7 relative rounded-2xl overflow-hidden border border-slate-200 bg-sky-950 min-h-[380px] lg:h-full flex flex-col">
+        <div
+          data-tour="tour-map"
+          className="lg:col-span-7 relative rounded-2xl overflow-hidden border border-slate-200 bg-sky-950 min-h-[380px] lg:h-full flex flex-col"
+        >
           {!mapImgError ? (
             <img
               src={ASSETS.archipelagoMap}
@@ -542,8 +750,9 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
             {mapConnections.map(([aId, bId]) => {
               const a = getIslandById(aId).mapPosition;
               const b = getIslandById(bId).mapPosition;
-              const inTrack =
-                activeTrack.islandIds.includes(aId) && activeTrack.islandIds.includes(bId);
+              const inTrack = isEssentialMode
+                ? essentialIslandSet.has(aId) && essentialIslandSet.has(bId)
+                : activeTrack.islandIds.includes(aId) && activeTrack.islandIds.includes(bId);
               const isConnected =
                 completedIslands.includes(aId) && completedIslands.includes(bId);
               const isPartial =
@@ -557,12 +766,12 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
                   y2={b.y}
                   stroke={
                     !inTrack
-                      ? 'rgba(255,255,255,0.16)'
+                      ? 'rgba(255,255,255,0.12)'
                       : isConnected
                       ? '#34d399'
                       : isPartial
                       ? '#7dd3fc'
-                      : 'rgba(255,255,255,0.55)'
+                      : 'rgba(255,255,255,0.65)'
                   }
                   strokeWidth={inTrack && isConnected ? '0.65' : '0.45'}
                   strokeDasharray={isConnected ? '1.8 1.4' : '1.4 1.2'}
@@ -575,8 +784,14 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
           {/* Clickable Island Beacons */}
           {ISLANDS.map((island) => {
             const done = completedIslands.includes(island.id);
-            const inTrack = activeTrack.islandIds.includes(island.id);
-            const isNext = nextIsland.id === island.id && !done;
+            const inTrack = isEssentialMode
+              ? essentialIslandSet.has(island.id)
+              : activeTrack.islandIds.includes(island.id);
+            const isNext =
+              isEssentialMode
+                ? essentialMetrics.nextAction.target.kind === 'island' &&
+                  essentialMetrics.nextAction.target.islandId === island.id
+                : nextIsland.id === island.id && !done;
             const stepNum = String(getAnalystStepNumber(island.id, selectedTrackId)).padStart(2, '0');
             const shortName = getShortCourseName(island);
             return (
@@ -596,12 +811,12 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
                 }}
                 className={`absolute -translate-x-1/2 -translate-y-1/2 group flex items-center gap-1.5 px-2 py-1 rounded-lg border text-left transition-all duration-150 hover:scale-105 hover:z-20 focus-visible:scale-105 focus-visible:z-20 shadow-md ${
                   !inTrack
-                    ? 'opacity-35 bg-slate-900/75 border-white/20 text-white/80 hover:opacity-95'
+                    ? 'opacity-25 bg-slate-900/75 border-white/20 text-white/80 hover:opacity-95'
                     : done
-                    ? 'bg-emerald-700 border-emerald-300 text-white'
+                    ? 'bg-emerald-700 border-emerald-300 text-white z-10'
                     : isNext
                     ? 'bg-sky-700 border-white text-white z-10'
-                    : 'bg-slate-900/90 border-white/40 text-white hover:bg-slate-900'
+                    : 'bg-slate-900/90 border-white/50 text-white hover:bg-slate-900 z-10'
                 }`}
               >
                 <span className="font-mono text-[10px] sm:text-[11px] font-bold tabular-nums opacity-95 shrink-0">
@@ -617,17 +832,24 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
           {/* Bottom map legend */}
           <div className="relative mt-auto p-4 flex flex-wrap items-center justify-between gap-3 text-xs text-white/95">
             <span className="font-medium">
-              Cliquez sur une île pour ouvrir son animation et son mini-jeu
+              {isEssentialMode
+                ? '6 îles socles mises en avant · cliquez pour ouvrir un cours'
+                : 'Cliquez sur une île pour ouvrir son animation et son mini-jeu'}
             </span>
             <span className="font-mono tabular-nums text-white/90">
-              Liaisons restaurées : {completedIslands.length}/{ISLANDS.length}
+              {isEssentialMode
+                ? `Socle validé : ${essentialCompletedIslandsCount}/${ESSENTIAL_PATH_ISLAND_IDS.length} îles`
+                : `Liaisons restaurées : ${completedIslands.length}/${ISLANDS.length}`}
             </span>
           </div>
         </div>
       </section>
 
       {/* Full-width 4-column Progress KPI Strip below Hero Split */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
+      <section
+        data-tour="tour-kpi"
+        className="grid grid-cols-2 lg:grid-cols-4 gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6"
+      >
         <div className="space-y-1">
           <p className="text-xs text-slate-500 dark:text-slate-400">Expérience accumulée</p>
           <p className="font-mono text-2xl font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
@@ -710,28 +932,238 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
         </div>
       </section>
 
+      {/* Focused End-to-End Essential Path (Default Mode) */}
+      {isEssentialMode && (
+        <EssentialPathSection
+          completedIslands={completedIslands}
+          topologyCompleted={topologyCompleted}
+          completedImmersionDaysCount={completedImmersionDaysCount}
+          completedMissionsCount={completedMissionsCount}
+          bestDefenseScore={bestDefenseScore}
+          passedExamsCount={passedExamsCount}
+          bestExamScore={bestExamScore}
+          onSelectIsland={onSelectIsland}
+          onOpenTopologyLab={onOpenTopologyLab}
+          onOpenImmersion={onOpenImmersion}
+          onOpenMissions={onOpenMissions}
+          onOpenDefense={onOpenDefense}
+          onOpenExam={onOpenExam}
+          onOpenCertificate={onOpenCertificate}
+          onOpenFullCatalog={() => onChangeWorkspaceScope?.('full')}
+        />
+      )}
+
+      {/* Francophone Beginner Workplace Immersion Spotlight (Full Catalog) */}
+      {!isEssentialMode && onOpenImmersion && (
+        <section
+          data-tour="tour-immersion"
+          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-5"
+        >
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+            <div className="space-y-1.5 max-w-2xl">
+              <p className="text-xs font-medium text-sky-700 dark:text-cyan-400">
+                Immersion débutant francophone · {IMMERSION_COMPANY.name} ({IMMERSION_COMPANY.city}) · ANSSI &amp; RGPD
+              </p>
+              <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-slate-100">
+                Ma Première Semaine en Poste ({completedImmersionDaysCount}/{IMMERSION_DAYS.length} jours validés)
+              </h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                Pas de drapeaux CTF abstraits en anglais : intégrez une vraie PME française comme
+                junior IT/Cyber, traitez des tickets réels avec décodeur de jargon en français
+                simple, et générez vos lignes d&apos;expérience pour votre CV.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                playClick();
+                onOpenImmersion();
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg bg-sky-700 hover:bg-sky-800 dark:bg-cyan-400 dark:hover:bg-cyan-300 text-white dark:text-slate-950 transition-colors whitespace-nowrap shrink-0 self-start md:self-auto"
+            >
+              <Briefcase className="w-4 h-4 shrink-0" />
+              {completedImmersionDaysCount === 0
+                ? 'Commencer le Jour 1 (Lundi)'
+                : 'Reprendre mon immersion'}
+              <ArrowRight className="w-4 h-4 shrink-0" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {IMMERSION_DAYS.map((d) => (
+              <button
+                key={d.dayNumber}
+                type="button"
+                onClick={() => {
+                  playClick();
+                  onOpenImmersion();
+                }}
+                className="text-left p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/50 hover:border-sky-500 transition-colors space-y-1.5"
+              >
+                <div className="flex items-center justify-between text-xs font-mono tabular-nums text-sky-700 dark:text-cyan-400 font-semibold">
+                  <span>
+                    Jour {d.dayNumber} · {d.dayLabel}
+                  </span>
+                  <span>+{d.xpReward} XP</span>
+                </div>
+                <div className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-snug">
+                  {d.roleContext}
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-2">
+                  {d.title}
+                </p>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Operational SOC Missions Queue — Beyond Theory & QCM */}
+      {!isEssentialMode && onOpenMissions && (
+        <section
+          data-tour="tour-missions"
+          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-5"
+        >
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+            <div className="space-y-1.5 max-w-2xl">
+              <p className="text-xs font-medium text-sky-700 dark:text-cyan-400">
+                Pratique opérationnelle SOC · Journaux SIEM, CLI forensique &amp; réponse à incident
+              </p>
+              <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-slate-100">
+                Missions Professionnelles : Incidents en cours ({completedMissionsCount}/{PRO_MISSIONS.length})
+              </h2>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Au-delà des cours et des QCM : triez des journaux bruts d&apos;entreprise, extrayez
+                les vrais IOC en saisie libre, interrogez la console et déployez la règle Sigma.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                playClick();
+                onOpenMissions();
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg bg-sky-700 hover:bg-sky-800 dark:bg-cyan-400 dark:hover:bg-cyan-300 text-white dark:text-slate-950 transition-colors whitespace-nowrap shrink-0 self-start md:self-auto"
+            >
+              <FileSearch className="w-4 h-4 shrink-0" />
+              Ouvrir le Centre SOC
+              <ArrowRight className="w-4 h-4 shrink-0" />
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs sm:text-sm">
+              <thead className="text-xs text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                <tr>
+                  <th className="py-2.5 pr-4 font-semibold whitespace-nowrap">Ticket · Sévérité</th>
+                  <th className="py-2.5 px-3 font-semibold">Incident &amp; Entreprise</th>
+                  <th className="py-2.5 px-3 font-semibold whitespace-nowrap">Domaine · MITRE</th>
+                  <th className="py-2.5 px-3 font-semibold whitespace-nowrap text-right">Statut</th>
+                  <th className="py-2.5 pl-3 font-semibold whitespace-nowrap text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                {PRO_MISSIONS.map((mission) => {
+                  const score = missionBestScores[mission.id];
+                  const solved = typeof score === 'number' && score >= 70;
+                  return (
+                    <tr
+                      key={mission.id}
+                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
+                    >
+                      <td className="py-3 pr-4 font-mono tabular-nums whitespace-nowrap">
+                        <div className="font-bold text-slate-900 dark:text-slate-100">
+                          {mission.ticketId}
+                        </div>
+                        <div
+                          className={
+                            mission.severity.startsWith('P1')
+                              ? 'text-xs text-rose-700 dark:text-rose-400 font-semibold'
+                              : 'text-xs text-amber-700 dark:text-amber-400 font-semibold'
+                          }
+                        >
+                          {mission.severity}
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 min-w-[240px]">
+                        <div className="font-semibold text-slate-900 dark:text-slate-100">
+                          {mission.title}
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                          {mission.organization} · {mission.logs.length} journaux SIEM · SLA{' '}
+                          {mission.slaMinutes} min
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <div className="text-xs font-medium text-slate-800 dark:text-slate-200">
+                          {mission.domain}
+                        </div>
+                        <div className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                          {mission.mitreTechniques.map((t) => t.id).join(' · ')}
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 text-right font-mono tabular-nums whitespace-nowrap">
+                        {solved ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                            Clôturé ({score}%)
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            Ouvert · +{mission.xpReward} XP
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 pl-3 text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playClick();
+                            onOpenMissions(mission.id);
+                          }}
+                          className="text-xs font-semibold text-sky-700 dark:text-cyan-400 hover:underline"
+                        >
+                          {solved ? 'Revoir →' : 'Enquêter →'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       {/* Direction 2 — Tactical SOC & Telemetry Operations Board */}
-      <TacticalSocTelemetryBoard
-        completedIslandsCount={completedIslands.length}
-        totalIslandsCount={ISLANDS.length}
-        neutralizedAttacksCount={neutralizedAttacksCount}
-        solvedDebugCount={solvedDebugCount}
-        ctfFlagsCount={ctfFlagsCount}
-        onOpenLabs={onOpenSimulator}
-      />
+      {!isEssentialMode && (
+        <TacticalSocTelemetryBoard
+          completedIslandsCount={completedIslands.length}
+          totalIslandsCount={ISLANDS.length}
+          neutralizedAttacksCount={neutralizedAttacksCount}
+          solvedDebugCount={solvedDebugCount}
+          ctfFlagsCount={ctfFlagsCount}
+          onOpenLabs={onOpenSimulator}
+        />
+      )}
 
       {/* Virtual Expertise Medals Showcase on Home Page */}
-      <ExpertiseBadgesShowcase
-        totalXp={totalXp}
-        passedExamsCount={passedExamsCount}
-        bestExamScore={bestExamScore}
-        speedrunsCompleted={speedrunsCompleted}
-        neutralizedAttacksCount={neutralizedAttacksCount}
-        onOpenExam={onOpenExam}
-      />
+      {!isEssentialMode && (
+        <ExpertiseBadgesShowcase
+          totalXp={totalXp}
+          passedExamsCount={passedExamsCount}
+          bestExamScore={bestExamScore}
+          speedrunsCompleted={speedrunsCompleted}
+          neutralizedAttacksCount={neutralizedAttacksCount}
+          onOpenExam={onOpenExam}
+        />
+      )}
 
       {/* Comfort, Accessibility & Classroom Transfer Toolbar */}
-      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-5 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <section
+        data-tour="tour-toolbar"
+        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-5 py-3.5 flex flex-wrap items-center justify-between gap-3"
+      >
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -818,6 +1250,9 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
         </div>
       </section>
 
+      {/* Full Catalog Sections (Guide, Career Tracks & 6-Phase 31-Course Roadmap) */}
+      {!isEssentialMode && (
+        <>
       {/* Direct Practical Guidance Strip */}
       <GemiBotGuide
         contextLabel="Pour bien démarrer"
@@ -829,7 +1264,10 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
       />
 
       {/* Career Tracks Selector Bar */}
-      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-4">
+      <section
+        data-tour="tour-tracks"
+        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-4"
+      >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-start gap-2.5">
             <Briefcase className="w-5 h-5 text-sky-700 dark:text-sky-400 shrink-0 mt-0.5" />
@@ -898,7 +1336,7 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
       </section>
 
       {/* Curriculum List — Ordered by Analyst Progression (5 Phases) */}
-      <section id="parcours-iles" className="space-y-8">
+      <section id="parcours-iles" data-tour="tour-roadmap" className="space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
             <p className="text-xs font-medium text-sky-700 dark:text-sky-400">
@@ -1298,6 +1736,8 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
           </div>
         </div>
       </section>
+        </>
+      )}
     </div>
   );
 };

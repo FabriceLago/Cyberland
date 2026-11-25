@@ -1,12 +1,15 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Cloud, PlayCircle, Shield, Trophy, UserCircle2, Zap } from 'lucide-react';
+import { Cloud, GraduationCap, PlayCircle, Shield, Trophy, UserCircle2, Zap } from 'lucide-react';
 import { getCourseName, getShortCourseName } from '../data/courseData';
 import { SPRING_SNAPPY } from './MotionPrimitives';
 
 export type AppRoute =
   | 'archipel'
   | 'island'
+  | 'defense'
+  | 'immersion'
+  | 'missions'
   | 'simulateur'
   | 'debug'
   | 'storyboards'
@@ -20,6 +23,9 @@ interface HeaderProps {
   nextStepNumber?: number;
   onOpenIsland: (islandId: number) => void;
   onOpenDemoVideo?: () => void;
+  learningTourActive?: boolean;
+  onToggleLearningTour?: () => void;
+  workspaceScope?: 'essential' | 'full';
   xpBoostMultiplier?: number;
   xpBoostRemainingSec?: number;
   isSignedIn?: boolean;
@@ -39,25 +45,43 @@ export const Header: React.FC<HeaderProps> = ({
   nextStepNumber,
   onOpenIsland,
   onOpenDemoVideo,
+  learningTourActive = false,
+  onToggleLearningTour,
+  workspaceScope = 'essential',
   xpBoostMultiplier = 1,
   xpBoostRemainingSec = 0,
   isSignedIn = false,
   userLabel = null,
 }) => {
-  const navItems: { id: AppRoute; label: string }[] = [
-    { id: 'archipel', label: 'Archipel' },
-    { id: 'simulateur', label: 'Laboratoires' },
-    { id: 'debug', label: 'Debug' },
-    { id: 'storyboards', label: 'Storyboards' },
-    { id: 'quiz', label: 'Quiz & Fiches' },
-    { id: 'classement', label: 'Classement' },
-  ];
+  const navItems: { id: AppRoute; label: string }[] =
+    workspaceScope === 'essential'
+      ? [
+          { id: 'archipel', label: 'Parcours' },
+          { id: 'immersion', label: 'Immersion' },
+          { id: 'missions', label: 'Missions' },
+          { id: 'defense', label: 'Défense' },
+          { id: 'simulateur', label: 'Labos' },
+          { id: 'quiz', label: 'Quiz' },
+        ]
+      : [
+          { id: 'archipel', label: 'Archipel' },
+          { id: 'defense', label: 'Défense' },
+          { id: 'immersion', label: 'Immersion' },
+          { id: 'missions', label: 'Missions' },
+          { id: 'simulateur', label: 'Labos' },
+          { id: 'debug', label: 'Debug' },
+          { id: 'quiz', label: 'Quiz' },
+          { id: 'classement', label: 'Classement' },
+        ];
 
   const boostActive = xpBoostRemainingSec > 0 && xpBoostMultiplier > 1;
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#080F1E]/95 backdrop-blur-md border-b border-slate-200 dark:border-cyan-500/20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4 sm:gap-6">
+    <header
+      data-tour="tour-header"
+      className="sticky top-0 z-40 bg-white/95 dark:bg-[#080F1E]/95 backdrop-blur-md border-b border-slate-200 dark:border-cyan-500/20"
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 sm:gap-4">
         <button
           type="button"
           onClick={() => onNavigate('archipel')}
@@ -67,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
           Cyberland
         </button>
 
-        <nav aria-label="Navigation principale" className="hidden lg:flex items-center gap-6">
+        <nav aria-label="Navigation principale" className="hidden lg:flex items-center gap-3.5">
           {navItems.map((item) => {
             const isActive =
               activeRoute === item.id || (item.id === 'archipel' && activeRoute === 'island');
@@ -76,7 +100,7 @@ export const Header: React.FC<HeaderProps> = ({
                 key={item.id}
                 type="button"
                 onClick={() => onNavigate(item.id)}
-                className={`relative py-2 text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
+                className={`relative py-2 text-[13px] xl:text-sm font-medium transition-colors whitespace-nowrap shrink-0 ${
                   isActive
                     ? 'text-sky-700 dark:text-cyan-300 font-semibold'
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -111,16 +135,37 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             </motion.button>
           )}
+          {onToggleLearningTour && (
+            <motion.button
+              type="button"
+              whileTap={{ scale: 0.97 }}
+              onClick={onToggleLearningTour}
+              aria-pressed={learningTourActive}
+              title={
+                learningTourActive
+                  ? 'Quitter le tutoriel guidé'
+                  : 'Lancer le tutoriel guidé pas à pas de l’archipel'
+              }
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+                learningTourActive
+                  ? 'border-sky-600 dark:border-cyan-400 bg-sky-100 dark:bg-cyan-500/20 text-sky-900 dark:text-cyan-200'
+                  : 'border-sky-200 dark:border-cyan-500/40 bg-sky-50 dark:bg-cyan-950/40 text-sky-800 dark:text-cyan-300 hover:border-sky-500 dark:hover:border-cyan-400 hover:bg-sky-100 dark:hover:bg-cyan-900/50'
+              }`}
+            >
+              <GraduationCap className="w-3.5 h-3.5 text-sky-700 dark:text-cyan-400 shrink-0" />
+              <span className="hidden sm:inline">Mode Apprentissage</span>
+            </motion.button>
+          )}
           {onOpenDemoVideo && (
             <motion.button
               type="button"
               whileTap={{ scale: 0.97 }}
               onClick={onOpenDemoVideo}
               title="Regarder la vidéo démo de 5 minutes"
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-cyan-500/35 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-cyan-300 hover:border-sky-400 dark:hover:border-cyan-400 text-xs font-semibold transition-colors whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-slate-200 dark:border-cyan-500/35 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-cyan-300 hover:border-sky-400 dark:hover:border-cyan-400 text-xs font-semibold transition-colors whitespace-nowrap shrink-0"
             >
               <PlayCircle className="w-3.5 h-3.5 text-sky-700 dark:text-cyan-400 shrink-0" />
-              <span className="hidden sm:inline">Démo 5 min</span>
+              <span className="hidden 2xl:inline">Démo 5 min</span>
             </motion.button>
           )}
           <motion.button

@@ -31,6 +31,19 @@ service cloud.firestore {
       return isVerifiedUser() && request.auth.uid == userId;
     }
 
+    function isBootstrapAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'delapipen@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrapAdmin()
+        || (
+          isVerifiedUser()
+          && exists(/databases/$(database)/documents/roles/$(request.auth.uid))
+          && get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role == 'admin'
+        );
+    }
+
     function isValidUserProgress(data) {
       return data.userId is string
         && data.userId.size() <= 128
@@ -93,8 +106,60 @@ service cloud.firestore {
         && data.updatedAt is timestamp;
     }
 
+    function isValidUserRole(data, targetUserId) {
+      return data.userId is string
+        && data.userId.size() <= 128
+        && data.userId.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.userId == targetUserId
+        && data.role is string
+        && data.role.size() <= 16
+        && data.role in ['learner', 'instructor', 'admin']
+        && data.assignedBy is string
+        && data.assignedBy.size() <= 128
+        && data.assignedBy.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.assignedBy == request.auth.uid
+        && data.note is string
+        && data.note.size() <= 120
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidProtectedAdminVault(data) {
+      return data.policyName is string
+        && data.policyName.size() >= 1
+        && data.policyName.size() <= 80
+        && data.minPassingScore is number
+        && data.minPassingScore >= 10
+        && data.minPassingScore <= 20
+        && data.requireSignedTransfers is bool
+        && data.strictZeroTrustMode is bool
+        && data.updatedBy is string
+        && data.updatedBy.size() <= 128
+        && data.updatedBy.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.updatedBy == request.auth.uid
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSecurityAuditLog(data) {
+      return data.actorUid is string
+        && data.actorUid.size() <= 128
+        && data.actorUid.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.actorUid == request.auth.uid
+        && data.action is string
+        && data.action.size() >= 1
+        && data.action.size() <= 64
+        && data.targetId is string
+        && data.targetId.size() >= 1
+        && data.targetId.size() <= 128
+        && data.outcome is string
+        && data.outcome.size() <= 10
+        && data.outcome in ['ALLOW', 'DENY']
+        && data.createdAt is timestamp;
+    }
+
     match /user_progress/{userId} {
-      allow get: if isValidId(userId) && isOwner(userId);
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
       allow list: if false;
       allow create: if isVerifiedUser()
         && isValidId(userId)
@@ -153,11 +218,11 @@ service cloud.firestore {
           ])
         );
 
-      allow delete: if isValidId(userId) && isOwner(userId);
+      allow delete: if isValidId(userId) && (isOwner(userId) || isAdmin());
     }
 
     match /leaderboard/{userId} {
-      allow get: if isValidId(userId) && (existing().isPublic == true || isOwner(userId));
+      allow get: if isValidId(userId) && (existing().isPublic == true || isOwner(userId) || isAdmin());
       allow list: if resource.data.isPublic == true;
       allow create: if isVerifiedUser()
         && isValidId(userId)
@@ -210,7 +275,125 @@ service cloud.firestore {
           ])
         );
 
-      allow delete: if isValidId(userId) && isOwner(userId);
+      allow delete: if isValidId(userId) && (isOwner(userId) || isAdmin());
+    }
+
+    // RBAC roles: readable by owner or verified admin; writable EXCLUSIVELY by verified admins
+    match /roles/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if false;
+      allow create: if isVerifiedUser()
+        && isValidId(userId)
+        && incoming().keys().hasAll([
+          'userId',
+          'role',
+          'assignedBy',
+          'note',
+          'createdAt',
+          'updatedAt'
+        ])
+        && incoming().keys().hasOnly([
+          'userId',
+          'role',
+          'assignedBy',
+          'note',
+          'createdAt',
+          'updatedAt'
+        ])
+        && isValidUserRole(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && isAdmin();
+
+      allow update: if isVerifiedUser()
+        && isValidId(userId)
+        && isValidUserRole(incoming(), userId)
+        && isAdmin()
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'role',
+          'assignedBy',
+          'note',
+          'updatedAt'
+        ]);
+
+      allow delete: if isValidId(userId) && isAdmin();
+    }
+
+    // Protected admin-only vault: proves database rejects unauthorized SDK access even if UI is bypassed
+    match /protected_admin_vault/{docId} {
+      allow get: if isValidId(docId) && isAdmin();
+      allow list: if false;
+      allow create: if isVerifiedUser()
+        && isValidId(docId)
+        && incoming().keys().hasAll([
+          'policyName',
+          'minPassingScore',
+          'requireSignedTransfers',
+          'strictZeroTrustMode',
+          'updatedBy',
+          'createdAt',
+          'updatedAt'
+        ])
+        && incoming().keys().hasOnly([
+          'policyName',
+          'minPassingScore',
+          'requireSignedTransfers',
+          'strictZeroTrustMode',
+          'updatedBy',
+          'createdAt',
+          'updatedAt'
+        ])
+        && isValidProtectedAdminVault(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && isAdmin();
+
+      allow update: if isVerifiedUser()
+        && isValidId(docId)
+        && isValidProtectedAdminVault(incoming())
+        && isAdmin()
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'policyName',
+          'minPassingScore',
+          'requireSignedTransfers',
+          'strictZeroTrustMode',
+          'updatedBy',
+          'updatedAt'
+        ]);
+
+      allow delete: if isValidId(docId) && isAdmin();
+    }
+
+    // Append-only security audit journal: immutable once written, admin-only
+    match /security_audit_logs/{logId} {
+      allow get: if isValidId(logId) && isAdmin();
+      allow list: if false;
+      allow create: if isVerifiedUser()
+        && isValidId(logId)
+        && incoming().keys().hasAll([
+          'actorUid',
+          'action',
+          'targetId',
+          'outcome',
+          'createdAt'
+        ])
+        && incoming().keys().hasOnly([
+          'actorUid',
+          'action',
+          'targetId',
+          'outcome',
+          'createdAt'
+        ])
+        && isValidSecurityAuditLog(incoming())
+        && incoming().createdAt == request.time
+        && isAdmin();
+      allow update: if false;
+      allow delete: if false;
     }
   }
 }

@@ -25,11 +25,15 @@ import { AdvancedLabId } from './data/advancedCoursesData';
 import { DebugExpressView } from './components/DebugExpressView';
 import { StoryboardsView } from './components/StoryboardsView';
 import { QuizAndSheetsView } from './components/QuizAndSheetsView';
+import { ProMissionsView } from './components/ProMissionsView';
+import { ProImmersionView } from './components/ProImmersionView';
+import { DefenseModeView } from './components/DefenseModeView';
 import { LeaderboardView } from './components/LeaderboardView';
 import { CertificateModal } from './components/CertificateModal';
 import { TransferAndClassModal, TransferPayload } from './components/TransferAndClassModal';
 import { CheatsheetModal } from './components/CheatsheetModal';
 import { DemoVideoModal } from './components/DemoVideoPlayer';
+import { LearningTourOverlay } from './components/LearningTourOverlay';
 import { EASE_SWISS, SPRING_TOAST } from './components/MotionPrimitives';
 import { SpeedrunCompletionResult } from './components/labs/SpeedrunModeLab';
 import { auth, db, handleFirestoreError, OperationType } from './firebase';
@@ -64,9 +68,16 @@ interface StoredProgress {
   claimedQuests: string[];
   ctfCapturedFlagIds: string[];
   bestSocSurvivalScore: number;
+  bestDefenseScore: number;
   unlockedAchievements: string[];
   achievementUnlockedAt: Record<string, string>;
   learningPace: LearningPaceId;
+  completedMissionIds: string[];
+  missionBestScores: Record<string, number>;
+  completedImmersionDays: number[];
+  topologyCompleted: boolean;
+  workspaceScope: 'essential' | 'full';
+  learningTourCompleted?: boolean;
   socThemeApplied?: boolean;
 }
 
@@ -98,9 +109,16 @@ const DEFAULT_PROGRESS: StoredProgress = {
   claimedQuests: [],
   ctfCapturedFlagIds: [],
   bestSocSurvivalScore: 0,
+  bestDefenseScore: 0,
   unlockedAchievements: [],
   achievementUnlockedAt: {},
   learningPace: 'regulier',
+  completedMissionIds: [],
+  missionBestScores: {},
+  completedImmersionDays: [],
+  topologyCompleted: false,
+  workspaceScope: 'essential',
+  learningTourCompleted: false,
   socThemeApplied: true,
 };
 
@@ -171,6 +189,8 @@ function loadProgress(): StoredProgress {
         : [],
       bestSocSurvivalScore:
         typeof parsed.bestSocSurvivalScore === 'number' ? parsed.bestSocSurvivalScore : 0,
+      bestDefenseScore:
+        typeof parsed.bestDefenseScore === 'number' ? parsed.bestDefenseScore : 0,
       unlockedAchievements: Array.isArray(parsed.unlockedAchievements)
         ? parsed.unlockedAchievements.filter((id): id is string => typeof id === 'string')
         : [],
@@ -184,6 +204,21 @@ function loadProgress(): StoredProgress {
         parsed.learningPace === 'intensif'
           ? parsed.learningPace
           : 'regulier',
+      completedMissionIds: Array.isArray(parsed.completedMissionIds)
+        ? parsed.completedMissionIds.filter((id): id is string => typeof id === 'string')
+        : [],
+      missionBestScores:
+        parsed.missionBestScores && typeof parsed.missionBestScores === 'object'
+          ? parsed.missionBestScores
+          : {},
+      completedImmersionDays: Array.isArray(parsed.completedImmersionDays)
+        ? parsed.completedImmersionDays.filter(
+            (n): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= 5
+          )
+        : [],
+      topologyCompleted: Boolean(parsed.topologyCompleted),
+      workspaceScope: parsed.workspaceScope === 'full' ? 'full' : 'essential',
+      learningTourCompleted: Boolean(parsed.learningTourCompleted),
     };
   } catch {
     return DEFAULT_PROGRESS;
@@ -198,10 +233,12 @@ export default function App() {
     lab: LabTab;
   } | null>(null);
   const [activeIslandId, setActiveIslandId] = useState<number>(1);
+  const [activeMissionId, setActiveMissionId] = useState<string | null>(null);
   const [certificateOpen, setCertificateOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
   const [cheatsheetOpen, setCheatsheetOpen] = useState(false);
   const [demoVideoOpen, setDemoVideoOpen] = useState(false);
+  const [learningTourOpen, setLearningTourOpen] = useState(false);
   const [progress, setProgress] = useState<StoredProgress>(() => loadProgress());
   const [nowTs, setNowTs] = useState<number>(() => Date.now());
   const [unlockedToastQueue, setUnlockedToastQueue] = useState<AchievementDefinition[]>([]);
@@ -646,6 +683,18 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleOpenTopologyLab = () => {
+    setLabsInitialTarget({ category: 'tools', lab: 'topology' });
+    setRoute('simulateur');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenAuthzLab = () => {
+    setLabsInitialTarget({ category: 'tools', lab: 'authz' });
+    setRoute('simulateur');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleOpenAdvancedLab = (labId: AdvancedLabId) => {
     setLabsInitialTarget({ category: 'tools', lab: labId });
     setRoute('simulateur');
@@ -656,6 +705,41 @@ export default function App() {
     setQuizInitialSection('exam');
     setRoute('quiz');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenMission = (missionId?: string) => {
+    setActiveMissionId(missionId ?? null);
+    setRoute('missions');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenImmersion = () => {
+    setRoute('immersion');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenDefense = () => {
+    setRoute('defense');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleToggleLearningTour = () => {
+    if (learningTourOpen) {
+      setLearningTourOpen(false);
+      return;
+    }
+    if (route !== 'archipel') {
+      setRoute('archipel');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    setLearningTourOpen(true);
+  };
+
+  const handleCompleteLearningTour = () => {
+    if (!progress.learningTourCompleted) {
+      setProgress((prev) => ({ ...prev, learningTourCompleted: true }));
+      handleAddExtraXp(25);
+    }
   };
 
   const handleCompleteIsland = (islandId: number, stars: number) => {
@@ -703,9 +787,62 @@ export default function App() {
       const boostedGain = Math.round(xpGain * mult);
       return {
         ...prev,
-        extraBonusXp: Math.min(4000, prev.extraBonusXp + boostedGain),
+        extraBonusXp: Math.min(8000, prev.extraBonusXp + boostedGain),
       };
     });
+  };
+
+  const handleCompleteProMission = (missionId: string, score: number, xpReward: number) => {
+    setProgress((prev) => {
+      const alreadyDone = prev.completedMissionIds.includes(missionId);
+      const prevBest = prev.missionBestScores[missionId] ?? 0;
+      const mult =
+        prev.xpBoostExpiresAt && prev.xpBoostExpiresAt > Date.now() ? prev.xpBoostMultiplier : 1;
+      const gainedXp = alreadyDone ? 0 : Math.round(xpReward * mult);
+      return {
+        ...prev,
+        completedMissionIds: alreadyDone
+          ? prev.completedMissionIds
+          : [...prev.completedMissionIds, missionId],
+        missionBestScores: {
+          ...prev.missionBestScores,
+          [missionId]: Math.max(prevBest, score),
+        },
+        neutralizedAttacksCount: alreadyDone
+          ? prev.neutralizedAttacksCount
+          : Math.min(50, prev.neutralizedAttacksCount + 1),
+        extraBonusXp: Math.min(8000, prev.extraBonusXp + gainedXp),
+      };
+    });
+  };
+
+  const handleCompleteImmersionDay = (dayNumber: number, xpReward: number) => {
+    setProgress((prev) => {
+      if (prev.completedImmersionDays.includes(dayNumber)) return prev;
+      const mult =
+        prev.xpBoostExpiresAt && prev.xpBoostExpiresAt > Date.now() ? prev.xpBoostMultiplier : 1;
+      const gainedXp = Math.round(xpReward * mult);
+      return {
+        ...prev,
+        completedImmersionDays: [...prev.completedImmersionDays, dayNumber].sort((a, b) => a - b),
+        extraBonusXp: Math.min(8000, prev.extraBonusXp + gainedXp),
+      };
+    });
+  };
+
+  const handleFinishDefenseSession = (
+    score: number,
+    neutralizedCount: number,
+    xpEarned: number
+  ) => {
+    setProgress((prev) => ({
+      ...prev,
+      bestDefenseScore: Math.max(prev.bestDefenseScore, score),
+      neutralizedAttacksCount: Math.min(50, prev.neutralizedAttacksCount + neutralizedCount),
+    }));
+    if (xpEarned > 0) {
+      handleAddExtraXp(xpEarned);
+    }
   };
 
   const handleFinishExam = (scoreOutOf20: number) => {
@@ -803,6 +940,9 @@ export default function App() {
         nextStepNumber={nextStepNumber}
         onOpenIsland={handleOpenIsland}
         onOpenDemoVideo={() => setDemoVideoOpen(true)}
+        learningTourActive={learningTourOpen}
+        onToggleLearningTour={handleToggleLearningTour}
+        workspaceScope={progress.workspaceScope}
         xpBoostMultiplier={activeMultiplier}
         xpBoostRemainingSec={xpBoostRemainingSec}
         isSignedIn={Boolean(user)}
@@ -866,7 +1006,21 @@ export default function App() {
             onChangeSpeechRate={(rate) =>
               setProgress((p) => ({ ...p, speechRate: rate }))
             }
+            completedMissionsCount={progress.completedMissionIds.length}
+            missionBestScores={progress.missionBestScores}
+            completedImmersionDaysCount={progress.completedImmersionDays.length}
+            topologyCompleted={progress.topologyCompleted}
+            bestDefenseScore={progress.bestDefenseScore}
+            workspaceScope={progress.workspaceScope}
+            onChangeWorkspaceScope={(scope) =>
+              setProgress((p) => ({ ...p, workspaceScope: scope }))
+            }
             onSelectIsland={handleOpenIsland}
+            onOpenDefense={handleOpenDefense}
+            onOpenImmersion={handleOpenImmersion}
+            onOpenMissions={handleOpenMission}
+            onOpenTopologyLab={handleOpenTopologyLab}
+            onOpenAuthzLab={handleOpenAuthzLab}
             onOpenSimulator={() => handleNavigate('simulateur')}
             onOpenExam={handleOpenExam}
             onOpenCertificate={() => setCertificateOpen(true)}
@@ -874,6 +1028,31 @@ export default function App() {
             onOpenCheatsheet={() => setCheatsheetOpen(true)}
             onOpenDemoVideo={() => setDemoVideoOpen(true)}
             onResetProgress={handleResetProgress}
+          />
+        )}
+
+        {route === 'defense' && (
+          <DefenseModeView
+            bestDefenseScore={progress.bestDefenseScore}
+            onFinishDefenseSession={handleFinishDefenseSession}
+          />
+        )}
+
+        {route === 'immersion' && (
+          <ProImmersionView
+            completedDays={progress.completedImmersionDays}
+            onCompleteDay={handleCompleteImmersionDay}
+            onOpenIsland={handleOpenIsland}
+          />
+        )}
+
+        {route === 'missions' && (
+          <ProMissionsView
+            initialMissionId={activeMissionId}
+            completedMissionIds={progress.completedMissionIds}
+            missionBestScores={progress.missionBestScores}
+            onCompleteMission={handleCompleteProMission}
+            onOpenIsland={handleOpenIsland}
           />
         )}
 
@@ -890,6 +1069,7 @@ export default function App() {
             onOpenVpnLab={handleOpenVpnLab}
             onOpenServerLab={handleOpenServerLab}
             onOpenAdvancedLab={handleOpenAdvancedLab}
+            onOpenMission={handleOpenMission}
             onAwardLabXp={(xp) => handleAddExtraXp(xp)}
           />
         )}
@@ -927,6 +1107,9 @@ export default function App() {
                 neutralizedAttacksCount: Math.min(50, p.neutralizedAttacksCount + 1),
               }));
               handleAddExtraXp(50);
+            }}
+            onCompleteTopology={() => {
+              setProgress((p) => ({ ...p, topologyCompleted: true }));
             }}
             onAwardLabXp={(xp) => handleAddExtraXp(xp)}
             onCaptureCtfFlag={(flagId, xp) => {
@@ -1122,6 +1305,16 @@ export default function App() {
         onClose={() => setDemoVideoOpen(false)}
         onNavigate={handleNavigate}
         onOpenIsland={handleOpenIsland}
+      />
+
+      <LearningTourOverlay
+        isOpen={learningTourOpen}
+        onClose={() => setLearningTourOpen(false)}
+        onCompleteTour={handleCompleteLearningTour}
+        alreadyCompleted={Boolean(progress.learningTourCompleted)}
+        workspaceScope={progress.workspaceScope}
+        onNavigateRoute={handleNavigate}
+        onOpenFirstCourse={() => handleOpenIsland(nextIslandId)}
       />
 
       <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
