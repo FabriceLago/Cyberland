@@ -28,7 +28,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { User } from 'firebase/auth';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, limit, onSnapshot, query, where } from 'firebase/firestore';
 import {
   db,
   handleFirestoreError,
@@ -305,7 +305,11 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
 
   useEffect(() => {
     if (!authReady) return;
-    const boardQuery = query(collection(db, 'leaderboard'), where('isPublic', '==', true));
+    const boardQuery = query(
+      collection(db, 'leaderboard'),
+      where('isPublic', '==', true),
+      limit(50)
+    );
     const unsub = onSnapshot(
       boardQuery,
       (snapshot) => {

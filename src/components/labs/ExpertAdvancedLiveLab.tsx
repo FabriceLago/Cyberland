@@ -26,6 +26,9 @@ import {
 } from 'lucide-react';
 import { AdvancedLabId } from '../../data/advancedCoursesData';
 import { playClick, playError, playSuccess } from '../../utils/sound';
+import { SentinelSuricataLiveLab } from './SentinelSuricataLiveLab';
+
+type LegacyAdvancedLabId = Exclude<AdvancedLabId, 'sentinel' | 'suricata'>;
 
 interface ExpertAdvancedLiveLabProps {
   labId: AdvancedLabId;
@@ -53,7 +56,7 @@ interface LabMeta {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-const LAB_META: Record<AdvancedLabId, LabMeta> = {
+const LAB_META: Record<LegacyAdvancedLabId, LabMeta> = {
   emailsec: {
     priority: 1,
     title: 'Lab Temps Réel · Messagerie SPF, DKIM, DMARC & En-têtes',
@@ -141,6 +144,16 @@ export const ExpertAdvancedLiveLab: React.FC<ExpertAdvancedLiveLabProps> = ({
   labId,
   onCompleteLab,
 }) => {
+  if (labId === 'sentinel' || labId === 'suricata') {
+    return <SentinelSuricataLiveLab labId={labId} onCompleteLab={onCompleteLab} />;
+  }
+  return <LegacyExpertAdvancedLiveLab labId={labId} onCompleteLab={onCompleteLab} />;
+};
+
+const LegacyExpertAdvancedLiveLab: React.FC<{
+  labId: LegacyAdvancedLabId;
+  onCompleteLab?: () => void;
+}> = ({ labId, onCompleteLab }) => {
   const meta = LAB_META[labId];
   const HeaderIcon = meta.icon;
 

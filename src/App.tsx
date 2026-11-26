@@ -122,6 +122,61 @@ const DEFAULT_PROGRESS: StoredProgress = {
   socThemeApplied: true,
 };
 
+const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+function clampInt(value: unknown, min: number, max: number, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
+  return Math.max(min, Math.min(max, Math.round(value)));
+}
+
+function sanitizeNumberMap(
+  input: unknown,
+  min: number,
+  max: number,
+  maxEntries = 64
+): Record<string, number> {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
+  const out: Record<string, number> = {};
+  let count = 0;
+  for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
+    if (count >= maxEntries) break;
+    if (!k || k.length > 64 || FORBIDDEN_KEYS.has(k)) continue;
+    if (typeof v === 'number' && Number.isFinite(v)) {
+      out[k] = Math.max(min, Math.min(max, Math.round(v)));
+      count += 1;
+    }
+  }
+  return out;
+}
+
+function sanitizeStarsMap(input: unknown): Record<number, number> {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
+  const out: Record<number, number> = {};
+  for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
+    if (FORBIDDEN_KEYS.has(k)) continue;
+    const id = Number(k);
+    if (Number.isInteger(id) && id >= 1 && id <= 35 && typeof v === 'number' && Number.isFinite(v)) {
+      out[id] = Math.max(0, Math.min(3, Math.round(v)));
+    }
+  }
+  return out;
+}
+
+function sanitizeStringMap(input: unknown, maxEntries = 64): Record<string, string> {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return {};
+  const out: Record<string, string> = {};
+  let count = 0;
+  for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
+    if (count >= maxEntries) break;
+    if (!k || k.length > 64 || FORBIDDEN_KEYS.has(k)) continue;
+    if (typeof v === 'string') {
+      out[k] = v.slice(0, 32);
+      count += 1;
+    }
+  }
+  return out;
+}
+
 function loadProgress(): StoredProgress {
   try {
     const raw =
@@ -129,29 +184,51 @@ function loadProgress(): StoredProgress {
       window.localStorage.getItem('geminisland_progress_v2');
     if (!raw) return DEFAULT_PROGRESS;
     const parsed = JSON.parse(raw) as Partial<StoredProgress>;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return DEFAULT_PROGRESS;
+    }
     return {
       ...DEFAULT_PROGRESS,
       learnerName:
         typeof parsed.learnerName === 'string' && parsed.learnerName.trim()
-          ? parsed.learnerName.slice(0, 48)
+          ? parsed.learnerName.trim().slice(0, 48)
           : DEFAULT_PROGRESS.learnerName,
-      completedIslands: Array.isArray(parsed.completedIslands) ? parsed.completedIslands : [],
-      starsByIsland:
-        parsed.starsByIsland && typeof parsed.starsByIsland === 'object'
-          ? parsed.starsByIsland
-          : {},
-      quizBonusXp: typeof parsed.quizBonusXp === 'number' ? parsed.quizBonusXp : 0,
-      solvedDebugIds: Array.isArray(parsed.solvedDebugIds) ? parsed.solvedDebugIds : [],
-      extraBonusXp: typeof parsed.extraBonusXp === 'number' ? parsed.extraBonusXp : 0,
+      completedIslands: Array.isArray(parsed.completedIslands)
+        ? Array.from(
+            new Set(
+              parsed.completedIslands.filter(
+                (n): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= 35
+              )
+            )
+          ).slice(0, 35)
+        : [],
+      starsByIsland: sanitizeStarsMap(parsed.starsByIsland),
+      quizBonusXp: clampInt(parsed.quizBonusXp, 0, 15000, 0),
+      solvedDebugIds: Array.isArray(parsed.solvedDebugIds)
+        ? Array.from(
+            new Set(
+              parsed.solvedDebugIds.filter(
+                (id): id is string => typeof id === 'string' && id.length <= 48
+              )
+            )
+          ).slice(0, 30)
+        : [],
+      extraBonusXp: clampInt(parsed.extraBonusXp, 0, 8000, 0),
       darkMode: parsed.socThemeApplied ? Boolean(parsed.darkMode) : true,
       socThemeApplied: true,
       readableMode: Boolean(parsed.readableMode),
       projectionMode: Boolean(parsed.projectionMode),
-      speechRate: typeof parsed.speechRate === 'number' ? parsed.speechRate : 1,
-      bestExamScore: typeof parsed.bestExamScore === 'number' ? parsed.bestExamScore : null,
+      speechRate:
+        typeof parsed.speechRate === 'number' && Number.isFinite(parsed.speechRate)
+          ? Math.max(0.5, Math.min(2, parsed.speechRate))
+          : 1,
+      bestExamScore:
+        typeof parsed.bestExamScore === 'number' && Number.isFinite(parsed.bestExamScore)
+          ? Math.max(0, Math.min(20, Math.round(parsed.bestExamScore)))
+          : null,
       passedExamsCount:
         typeof parsed.passedExamsCount === 'number'
-          ? parsed.passedExamsCount
+          ? clampInt(parsed.passedExamsCount, 0, 500, 0)
           : typeof parsed.bestExamScore === 'number' && parsed.bestExamScore >= 10
           ? 1
           : 0,
@@ -165,39 +242,33 @@ function loadProgress(): StoredProgress {
           ? parsed.selectedTrackId
           : 'all',
       xpBoostMultiplier:
-        typeof parsed.xpBoostMultiplier === 'number' && parsed.xpBoostMultiplier >= 1
-          ? parsed.xpBoostMultiplier
+        typeof parsed.xpBoostMultiplier === 'number' && Number.isFinite(parsed.xpBoostMultiplier)
+          ? Math.max(1, Math.min(3, parsed.xpBoostMultiplier))
           : 1,
       xpBoostExpiresAt:
-        typeof parsed.xpBoostExpiresAt === 'number' ? parsed.xpBoostExpiresAt : null,
-      bestSpeedrunByCircuit:
-        parsed.bestSpeedrunByCircuit && typeof parsed.bestSpeedrunByCircuit === 'object'
-          ? parsed.bestSpeedrunByCircuit
-          : {},
-      speedrunsCompleted:
-        typeof parsed.speedrunsCompleted === 'number' ? parsed.speedrunsCompleted : 0,
-      neutralizedAttacksCount:
-        typeof parsed.neutralizedAttacksCount === 'number' ? parsed.neutralizedAttacksCount : 0,
+        typeof parsed.xpBoostExpiresAt === 'number' && Number.isFinite(parsed.xpBoostExpiresAt)
+          ? parsed.xpBoostExpiresAt
+          : null,
+      bestSpeedrunByCircuit: sanitizeNumberMap(parsed.bestSpeedrunByCircuit, 0, 3600000, 20),
+      speedrunsCompleted: clampInt(parsed.speedrunsCompleted, 0, 1000, 0),
+      neutralizedAttacksCount: clampInt(parsed.neutralizedAttacksCount, 0, 50, 0),
       isPublicLeaderboard:
         typeof parsed.isPublicLeaderboard === 'boolean' ? parsed.isPublicLeaderboard : true,
       dailyCompletedDate:
-        typeof parsed.dailyCompletedDate === 'string' ? parsed.dailyCompletedDate : null,
-      dailyStreak: typeof parsed.dailyStreak === 'number' ? parsed.dailyStreak : 0,
-      claimedQuests: Array.isArray(parsed.claimedQuests) ? parsed.claimedQuests : [],
+        typeof parsed.dailyCompletedDate === 'string' ? parsed.dailyCompletedDate.slice(0, 16) : null,
+      dailyStreak: clampInt(parsed.dailyStreak, 0, 3650, 0),
+      claimedQuests: Array.isArray(parsed.claimedQuests)
+        ? parsed.claimedQuests.filter((id): id is string => typeof id === 'string' && id.length <= 48).slice(0, 32)
+        : [],
       ctfCapturedFlagIds: Array.isArray(parsed.ctfCapturedFlagIds)
-        ? parsed.ctfCapturedFlagIds
+        ? parsed.ctfCapturedFlagIds.filter((id): id is string => typeof id === 'string' && id.length <= 48).slice(0, 64)
         : [],
-      bestSocSurvivalScore:
-        typeof parsed.bestSocSurvivalScore === 'number' ? parsed.bestSocSurvivalScore : 0,
-      bestDefenseScore:
-        typeof parsed.bestDefenseScore === 'number' ? parsed.bestDefenseScore : 0,
+      bestSocSurvivalScore: clampInt(parsed.bestSocSurvivalScore, 0, 100000, 0),
+      bestDefenseScore: clampInt(parsed.bestDefenseScore, 0, 100000, 0),
       unlockedAchievements: Array.isArray(parsed.unlockedAchievements)
-        ? parsed.unlockedAchievements.filter((id): id is string => typeof id === 'string')
+        ? parsed.unlockedAchievements.filter((id): id is string => typeof id === 'string' && id.length <= 64).slice(0, 64)
         : [],
-      achievementUnlockedAt:
-        parsed.achievementUnlockedAt && typeof parsed.achievementUnlockedAt === 'object'
-          ? parsed.achievementUnlockedAt
-          : {},
+      achievementUnlockedAt: sanitizeStringMap(parsed.achievementUnlockedAt, 64),
       learningPace:
         parsed.learningPace === 'tranquille' ||
         parsed.learningPace === 'regulier' ||
@@ -205,12 +276,9 @@ function loadProgress(): StoredProgress {
           ? parsed.learningPace
           : 'regulier',
       completedMissionIds: Array.isArray(parsed.completedMissionIds)
-        ? parsed.completedMissionIds.filter((id): id is string => typeof id === 'string')
+        ? parsed.completedMissionIds.filter((id): id is string => typeof id === 'string' && id.length <= 64).slice(0, 64)
         : [],
-      missionBestScores:
-        parsed.missionBestScores && typeof parsed.missionBestScores === 'object'
-          ? parsed.missionBestScores
-          : {},
+      missionBestScores: sanitizeNumberMap(parsed.missionBestScores, 0, 100, 64),
       completedImmersionDays: Array.isArray(parsed.completedImmersionDays)
         ? parsed.completedImmersionDays.filter(
             (n): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= 5
@@ -905,12 +973,20 @@ export default function App() {
   const handleImportProgress = (payload: TransferPayload) => {
     setProgress((prev) => ({
       ...prev,
-      learnerName: payload.name.slice(0, 48),
-      completedIslands: payload.completedIslands,
-      starsByIsland: payload.starsByIsland,
-      quizBonusXp: payload.quizBonusXp,
-      solvedDebugIds: payload.solvedDebugIds,
-      extraBonusXp: payload.extraBonusXp,
+      learnerName: (payload.name || DEFAULT_PROGRESS.learnerName).trim().slice(0, 48),
+      completedIslands: Array.from(
+        new Set(
+          payload.completedIslands.filter(
+            (n) => typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= 35
+          )
+        )
+      ).slice(0, 35),
+      starsByIsland: sanitizeStarsMap(payload.starsByIsland),
+      quizBonusXp: clampInt(payload.quizBonusXp, 0, 15000, 0),
+      solvedDebugIds: Array.from(
+        new Set(payload.solvedDebugIds.filter((id) => typeof id === 'string' && id.length <= 48))
+      ).slice(0, 30),
+      extraBonusXp: clampInt(payload.extraBonusXp, 0, 8000, 0),
     }));
   };
 

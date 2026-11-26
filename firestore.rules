@@ -54,7 +54,14 @@ service cloud.firestore {
         && data.learnerName.size() <= 48
         && data.completedIslands is list
         && data.completedIslands.size() <= 35
-        && (data.completedIslands.size() == 0 || data.completedIslands[0] is int)
+        && (
+          data.completedIslands.size() == 0
+          || (
+            data.completedIslands[0] is int
+            && data.completedIslands[0] >= 1
+            && data.completedIslands[0] <= 35
+          )
+        )
         && data.totalXp is number
         && data.totalXp >= 0
         && data.totalXp <= 50000
@@ -223,7 +230,7 @@ service cloud.firestore {
 
     match /leaderboard/{userId} {
       allow get: if isValidId(userId) && (existing().isPublic == true || isOwner(userId) || isAdmin());
-      allow list: if resource.data.isPublic == true;
+      allow list: if resource.data.isPublic == true && request.query.limit <= 50;
       allow create: if isVerifiedUser()
         && isValidId(userId)
         && request.auth.uid == userId

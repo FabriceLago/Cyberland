@@ -10,6 +10,7 @@ import { ExamBlancPanel } from './ExamBlancPanel';
 import { ClassroomDuelPanel } from './ClassroomDuelPanel';
 import { InterviewAndCertPrepPanel } from './InterviewAndCertPrepPanel';
 import { playClick, playError, playSuccess, playVictory } from '../utils/sound';
+import { sanitizeCsvCell } from '../utils/safeExport';
 
 interface QuizAndSheetsViewProps {
   initialSection?: 'quiz' | 'cases' | 'exam' | 'duel' | 'certif';
@@ -149,7 +150,7 @@ export const QuizAndSheetsView: React.FC<QuizAndSheetsViewProps> = ({
 
   const handleExportKahootCsv = () => {
     playSuccess();
-    const csvCell = (val: string) => `"${val.replace(/"/g, '""')}"`;
+    const csvCell = (val: string) => sanitizeCsvCell(val);
     const header = [
       'Question',
       'Answer 1',

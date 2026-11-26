@@ -33,6 +33,7 @@ import {
   ScanSearch,
   Server,
   ShieldAlert,
+  ShieldCheck,
   Siren,
   Terminal,
   TerminalSquare,
@@ -70,6 +71,7 @@ import { ExpertAdvancedLiveLab } from './labs/ExpertAdvancedLiveLab';
 import { InteractiveTopologyLab } from './labs/InteractiveTopologyLab';
 import { ServerDbAuthLab } from './labs/ServerDbAuthLab';
 import { SocLiveMonitoringLab } from './labs/SocLiveMonitoringLab';
+import { NetworkSnifferLab } from './labs/NetworkSnifferLab';
 import { AdvancedLabId } from '../data/advancedCoursesData';
 import { CyberAttackId } from '../data/cyberAttackSimulations';
 import { EASE_SWISS, SPRING_SNAPPY } from './MotionPrimitives';
@@ -123,6 +125,7 @@ export type LabTab =
   | 'vpnconfig'
   | 'serverconfig'
   | 'topology'
+  | 'sniffer'
   | 'authz'
   | AdvancedLabId;
 
@@ -136,6 +139,8 @@ const ADVANCED_LAB_IDS: AdvancedLabId[] = [
   'linuxadmin',
   'winserver',
   'admastery',
+  'sentinel',
+  'suricata',
 ];
 
 function isAdvancedLabId(id: LabTab): id is AdvancedLabId {
@@ -202,11 +207,14 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
   ];
 
   const toolTabs: { id: LabTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: 'sniffer', label: 'Network Sniffer (Mini-Wireshark)', icon: Radar },
     { id: 'authz', label: 'Contrôle d’Accès Serveur & BDD (AuthZ)', icon: ShieldAlert },
     { id: 'topology', label: 'Topologie Interactive (Routeurs · Pare-feu · Paquets)', icon: Network },
     { id: 'linuxadmin', label: 'Linux Live (Admin, Systemd & LVM)', icon: TerminalSquare },
     { id: 'winserver', label: 'Windows Server Live (DNS/DHCP/SMB)', icon: Server },
     { id: 'admastery', label: 'Active Directory Live (AD DS/GPO)', icon: FolderTree },
+    { id: 'sentinel', label: 'Microsoft Sentinel Live (SIEM/KQL)', icon: ShieldCheck },
+    { id: 'suricata', label: 'Suricata Live (IDS/IPS & EVE JSON)', icon: Radar },
     { id: 'serverconfig', label: 'Serveur Live (Création & Config)', icon: Server },
     { id: 'vpnconfig', label: 'VPN Live (Création & Config)', icon: Lock },
     { id: 'emailsec', label: 'P1 · Messagerie SPF/DKIM/DMARC', icon: MailCheck },
@@ -244,7 +252,7 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
     playClick();
     setCategory(nextCat);
     if (nextCat === 'attacks') setActiveLab('xss');
-    if (nextCat === 'tools') setActiveLab('authz');
+    if (nextCat === 'tools') setActiveLab('sniffer');
   };
 
   const handleNeutralize = (attackId: CyberAttackId) => {
@@ -261,7 +269,7 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-1.5">
             <p className="text-xs font-mono font-medium text-sky-700 dark:text-cyan-400">
-              SOC Live Monitoring · 44 ateliers tactiques · AuthZ Serveur &amp; BDD · Topologie Interactive · Linux · Windows Server · Active Directory · {neutralizedAttacks.length} / {CYBER_ATTACK_IDS.length} attaques live neutralisées cette session
+              SOC Live Monitoring · 47 ateliers tactiques · Microsoft Sentinel · Suricata IDS/IPS · Network Sniffer · AuthZ Serveur &amp; BDD · Topologie Interactive · {neutralizedAttacks.length} / {CYBER_ATTACK_IDS.length} attaques live neutralisées cette session
             </p>
             <h1 className="font-display text-3xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100">
               Laboratoires Réseaux, Cloud &amp; Cyber
@@ -295,7 +303,7 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
                 },
                 {
                   id: 'tools',
-                  label: 'CTF & Outils (33)',
+                  label: 'CTF & Outils (36)',
                   icon: Wrench,
                   activeBg: 'bg-sky-600 dark:bg-cyan-500',
                   activeText: 'text-white dark:text-slate-950',
@@ -419,6 +427,9 @@ export const LabsHubView: React.FC<LabsHubViewProps> = ({
             />
           )}
 
+          {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'sniffer' && (
+            <NetworkSnifferLab onCompleteChallenges={() => onAwardLabXp?.(100)} />
+          )}
           {category !== 'speedrun' && category !== 'monitoring' && activeLab === 'authz' && (
             <ServerDbAuthLab onCompleteHardening={() => onAwardLabXp?.(120)} />
           )}

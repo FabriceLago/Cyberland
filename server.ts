@@ -22,7 +22,11 @@ const GOOGLE_CERTS_URL =
 
 const BOOTSTRAP_ADMIN_EMAIL = 'delapipen@gmail.com';
 const UID_REGEX = /^[a-zA-Z0-9_-]{1,128}$/;
+const KID_REGEX = /^[a-zA-Z0-9_-]{1,128}$/;
 const DEBUG_ID_REGEX = /^[a-zA-Z0-9_-]{1,48}$/;
+const TRANSFER_CODE_TTL_SEC = 30 * 24 * 60 * 60; // 30 days max validity
+const MAX_ROLE_OVERRIDES = 200;
+const FORBIDDEN_OBJECT_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
 // Ephemeral CSPRNG fallback when TRANSFER_SIGNING_SECRET is not set in environment.
 // Never hardcoded and never exposed to the client.
@@ -89,22 +93,35 @@ function recordAuditEvent(event: Omit<ServerAuditEvent, 'id' | 'timestamp'>): vo
 let cachedCerts: Record<string, string> | null = null;
 let cachedCertsExpiresAt = 0;
 
+const GOOGLE_CERTS_TIMEOUT_MS = 5000;
+
 async function getGoogleFirebaseCerts(): Promise<Record<string, string>> {
   const now = Date.now();
   if (cachedCerts && now < cachedCertsExpiresAt) {
     return cachedCerts;
   }
-  const response = await fetch(GOOGLE_CERTS_URL);
+  const response = await fetch(GOOGLE_CERTS_URL, {
+    signal: AbortSignal.timeout(GOOGLE_CERTS_TIMEOUT_MS),
+  });
   if (!response.ok) {
-    throw new Error(`Failed to fetch Firebase public certificates (${response.status})`);
+    throw new Error('CERT_FETCH_FAILED');
   }
   const cacheControl = response.headers.get('cache-control') || '';
   const maxAgeMatch = cacheControl.match(/max-age=(\d+)/i);
   const ttlSec = maxAgeMatch ? Math.min(21600, Math.max(60, Number(maxAgeMatch[1]))) : 3600;
-  const certs = (await response.json()) as Record<string, string>;
-  cachedCerts = certs;
+  const rawCerts = (await response.json()) as unknown;
+  if (!rawCerts || typeof rawCerts !== 'object' || Array.isArray(rawCerts)) {
+    throw new Error('CERT_RESPONSE_INVALID');
+  }
+  const safeCerts: Record<string, string> = Object.create(null);
+  for (const [kid, pem] of Object.entries(rawCerts as Record<string, unknown>)) {
+    if (KID_REGEX.test(kid) && !FORBIDDEN_OBJECT_KEYS.has(kid) && typeof pem === 'string') {
+      safeCerts[kid] = pem;
+    }
+  }
+  cachedCerts = safeCerts;
   cachedCertsExpiresAt = now + ttlSec * 1000;
-  return certs;
+  return safeCerts;
 }
 
 function decodeBase64UrlJson<T>(segment: string): T {
@@ -142,36 +159,36 @@ async function verifyFirebaseIdToken(idToken: string): Promise<VerifiedAuthUser>
   const [headerB64, payloadB64, signatureB64] = parts;
   const header = decodeBase64UrlJson<FirebaseJwtHeader>(headerB64);
 
-  // Strictly require RS256 to prevent alg:none or symmetric HS256 confusion attacks
-  if (header.alg !== 'RS256' || typeof header.kid !== 'string' || !header.kid) {
+  // Strictly require RS256 and a safe key ID to prevent alg confusion or prototype lookups
+  if (
+    header.alg !== 'RS256' ||
+    typeof header.kid !== 'string' ||
+    !KID_REGEX.test(header.kid) ||
+    FORBIDDEN_OBJECT_KEYS.has(header.kid)
+  ) {
     throw new Error('INVALID_TOKEN_ALGORITHM');
   }
 
   const certs = await getGoogleFirebaseCerts();
-  const certPem = certs[header.kid];
-  if (!certPem) {
+  let certPem = Object.prototype.hasOwnProperty.call(certs, header.kid) ? certs[header.kid] : undefined;
+  if (typeof certPem !== 'string' || !certPem) {
     // Force refresh once in case Google rotated keys
     cachedCertsExpiresAt = 0;
     const refreshedCerts = await getGoogleFirebaseCerts();
-    const refreshedPem = refreshedCerts[header.kid];
-    if (!refreshedPem) {
+    certPem = Object.prototype.hasOwnProperty.call(refreshedCerts, header.kid)
+      ? refreshedCerts[header.kid]
+      : undefined;
+    if (typeof certPem !== 'string' || !certPem) {
       throw new Error('UNKNOWN_KEY_ID');
     }
-    const verifier = crypto.createVerify('RSA-SHA256');
-    verifier.update(`${headerB64}.${payloadB64}`);
-    verifier.end();
-    const sigBuf = Buffer.from(signatureB64.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
-    if (!verifier.verify(refreshedPem, sigBuf)) {
-      throw new Error('INVALID_SIGNATURE');
-    }
-  } else {
-    const verifier = crypto.createVerify('RSA-SHA256');
-    verifier.update(`${headerB64}.${payloadB64}`);
-    verifier.end();
-    const sigBuf = Buffer.from(signatureB64.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
-    if (!verifier.verify(certPem, sigBuf)) {
-      throw new Error('INVALID_SIGNATURE');
-    }
+  }
+
+  const verifier = crypto.createVerify('RSA-SHA256');
+  verifier.update(`${headerB64}.${payloadB64}`);
+  verifier.end();
+  const sigBuf = Buffer.from(signatureB64.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+  if (!verifier.verify(certPem, sigBuf)) {
+    throw new Error('INVALID_SIGNATURE');
   }
 
   const payload = decodeBase64UrlJson<FirebaseJwtPayload>(payloadB64);
@@ -184,14 +201,23 @@ async function verifyFirebaseIdToken(idToken: string): Promise<VerifiedAuthUser>
   if (payload.aud !== FIREBASE_PROJECT_ID) {
     throw new Error('INVALID_AUDIENCE');
   }
-  if (typeof payload.exp !== 'number' || payload.exp <= nowSec) {
+  if (typeof payload.exp !== 'number' || !Number.isFinite(payload.exp) || payload.exp <= nowSec) {
     throw new Error('TOKEN_EXPIRED');
   }
-  if (typeof payload.iat !== 'number' || payload.iat > nowSec + 60) {
+  if (typeof payload.iat !== 'number' || !Number.isFinite(payload.iat) || payload.iat > nowSec + 60) {
     throw new Error('TOKEN_FUTURE_IAT');
+  }
+  if (
+    typeof payload.auth_time === 'number' &&
+    (!Number.isFinite(payload.auth_time) || payload.auth_time > nowSec + 60)
+  ) {
+    throw new Error('INVALID_AUTH_TIME');
   }
   if (typeof payload.sub !== 'string' || !UID_REGEX.test(payload.sub)) {
     throw new Error('INVALID_SUBJECT');
+  }
+  if (typeof payload.user_id === 'string' && payload.user_id !== payload.sub) {
+    throw new Error('SUBJECT_MISMATCH');
   }
   if (payload.email_verified !== true || typeof payload.email !== 'string') {
     throw new Error('EMAIL_NOT_VERIFIED');
@@ -285,12 +311,30 @@ async function requireFirebaseAuth(
     return;
   }
 
+  const SAFE_AUTH_ERROR_CODES = new Set([
+    'MALFORMED_TOKEN',
+    'INVALID_TOKEN_ALGORITHM',
+    'UNKNOWN_KEY_ID',
+    'INVALID_SIGNATURE',
+    'INVALID_ISSUER',
+    'INVALID_AUDIENCE',
+    'TOKEN_EXPIRED',
+    'TOKEN_FUTURE_IAT',
+    'INVALID_AUTH_TIME',
+    'INVALID_SUBJECT',
+    'SUBJECT_MISMATCH',
+    'EMAIL_NOT_VERIFIED',
+    'CERT_FETCH_FAILED',
+    'CERT_RESPONSE_INVALID',
+  ]);
+
   try {
     const verifiedUser = await verifyFirebaseIdToken(token);
     req.authUser = verifiedUser;
     next();
   } catch (err) {
-    const code = err instanceof Error ? err.message : 'TOKEN_VERIFICATION_FAILED';
+    const rawCode = err instanceof Error ? err.message : '';
+    const code = SAFE_AUTH_ERROR_CODES.has(rawCode) ? rawCode : 'TOKEN_VERIFICATION_FAILED';
     recordAuditEvent({
       method: req.method,
       path: req.path,
@@ -452,11 +496,24 @@ function verifySignedTransferCode(
 
   try {
     const parsed = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8')) as {
-      v?: number;
-      uid?: string;
-      iat?: number;
+      v?: unknown;
+      uid?: unknown;
+      iat?: unknown;
       data?: unknown;
     };
+    const nowSec = Math.floor(Date.now() / 1000);
+    if (parsed.v !== 2) {
+      return { ok: false, error: 'UNSUPPORTED_TRANSFER_VERSION' };
+    }
+    if (typeof parsed.iat !== 'number' || !Number.isInteger(parsed.iat) || parsed.iat <= 0) {
+      return { ok: false, error: 'INVALID_ISSUED_AT' };
+    }
+    if (parsed.iat > nowSec + 60) {
+      return { ok: false, error: 'TRANSFER_CODE_FUTURE_IAT' };
+    }
+    if (nowSec - parsed.iat > TRANSFER_CODE_TTL_SEC) {
+      return { ok: false, error: 'TRANSFER_CODE_EXPIRED' };
+    }
     const sanitized = sanitizeTransferPayload(parsed.data);
     if (!sanitized || typeof parsed.uid !== 'string' || !UID_REGEX.test(parsed.uid)) {
       return { ok: false, error: 'SCHEMA_VALIDATION_FAILED' };
@@ -465,7 +522,7 @@ function verifySignedTransferCode(
       ok: true,
       payload: sanitized,
       signedByUid: parsed.uid,
-      issuedAt: typeof parsed.iat === 'number' ? parsed.iat : 0,
+      issuedAt: parsed.iat,
     };
   } catch {
     return { ok: false, error: 'MALFORMED_JSON' };
@@ -507,8 +564,62 @@ async function startServer(): Promise<void> {
   app.use((_req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
     next();
   });
+
+  // Prevent browser/proxy caching of sensitive API responses
+  app.use('/api', (_req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    next();
+  });
+
+  // Bounded in-memory per-IP rate limiter to prevent brute-force, CPU exhaustion, and audit log flooding
+  const MAX_TRACKED_RATE_KEYS = 2000;
+  function createRateLimiter(maxRequests: number, windowMs: number, bucketName: string) {
+    const hits = new Map<string, { count: number; resetAt: number }>();
+    return (req: Request, res: Response, next: NextFunction): void => {
+      const now = Date.now();
+      const ip = req.ip || req.socket.remoteAddress || 'unknown';
+      const key = `${bucketName}:${ip}`;
+
+      if (hits.size >= MAX_TRACKED_RATE_KEYS && !hits.has(key)) {
+        for (const [k, entry] of hits) {
+          if (entry.resetAt <= now) hits.delete(k);
+        }
+        if (hits.size >= MAX_TRACKED_RATE_KEYS) {
+          const oldestKey = hits.keys().next().value;
+          if (oldestKey) hits.delete(oldestKey);
+        }
+      }
+
+      const current = hits.get(key);
+      if (!current || current.resetAt <= now) {
+        hits.set(key, { count: 1, resetAt: now + windowMs });
+        next();
+        return;
+      }
+
+      if (current.count >= maxRequests) {
+        const retryAfterSec = Math.max(1, Math.ceil((current.resetAt - now) / 1000));
+        res.setHeader('Retry-After', String(retryAfterSec));
+        res.status(429).json({
+          error: 'RATE_LIMIT_EXCEEDED',
+          message: 'Trop de requêtes sur cette route API. Veuillez patienter quelques secondes.',
+          retryAfterSec,
+          enforcedBy: `server-middleware:rateLimit(${bucketName})`,
+        });
+        return;
+      }
+
+      current.count += 1;
+      next();
+    };
+  }
+
+  app.use('/api', createRateLimiter(120, 60_000, 'api-global'));
+  const sensitiveRouteLimiter = createRateLimiter(30, 60_000, 'api-sensitive');
 
   // Public non-sensitive policy summary (no PII, no secrets)
   app.get('/api/security/policy', (_req, res) => {
@@ -709,6 +820,7 @@ async function startServer(): Promise<void> {
   // 5. Strictly Admin-only server role grant synchronization
   app.post(
     '/api/admin/roles',
+    sensitiveRouteLimiter,
     requireFirebaseAuth,
     requireRole('admin'),
     (req: AuthenticatedRequest, res: Response) => {
@@ -717,10 +829,18 @@ async function startServer(): Promise<void> {
       const targetUid = typeof body.targetUid === 'string' ? body.targetUid.trim() : '';
       const role = body.role;
 
-      if (!UID_REGEX.test(targetUid)) {
+      if (!UID_REGEX.test(targetUid) || FORBIDDEN_OBJECT_KEYS.has(targetUid)) {
         res.status(400).json({
           error: 'INVALID_TARGET_UID',
           message: 'UID cible invalide (alphanumérique, tirets et underscores uniquement).',
+        });
+        return;
+      }
+
+      if (targetUid === user.uid) {
+        res.status(400).json({
+          error: 'CANNOT_MODIFY_SELF_ROLE',
+          message: 'Modification de votre propre rôle interdite depuis cette route.',
         });
         return;
       }
@@ -737,6 +857,13 @@ async function startServer(): Promise<void> {
       if (role === 'learner') {
         serverRoleOverrides.delete(targetUid);
       } else {
+        if (!serverRoleOverrides.has(targetUid) && serverRoleOverrides.size >= MAX_ROLE_OVERRIDES) {
+          res.status(429).json({
+            error: 'ROLE_REGISTRY_CAPACITY_REACHED',
+            message: 'Capacité maximale du registre de rôles serveur atteinte.',
+          });
+          return;
+        }
         serverRoleOverrides.set(targetUid, {
           role,
           assignedBy: user.uid,
@@ -803,7 +930,7 @@ async function startServer(): Promise<void> {
   );
 
   // 7. Server-side cryptographic verification of signed transfer codes
-  app.post('/api/transfer/verify', (req: Request, res: Response) => {
+  app.post('/api/transfer/verify', sensitiveRouteLimiter, (req: Request, res: Response) => {
     const code = typeof req.body?.code === 'string' ? req.body.code : '';
     const result = verifySignedTransferCode(code);
     if (!result.ok) {
@@ -823,7 +950,9 @@ async function startServer(): Promise<void> {
         message:
           result.error === 'INVALID_HMAC_SIGNATURE'
             ? 'Signature cryptographique HMAC-SHA256 invalide : le code a été modifié ou falsifié.'
-            : 'Code non signé par le serveur (format GEM2.<payload>.<hmac> requis).',
+            : result.error === 'TRANSFER_CODE_EXPIRED'
+              ? 'Ce code de transfert signé a expiré (validité maximale : 30 jours).'
+              : 'Code non signé ou invalide (format GEM2.<payload>.<hmac> requis).',
         enforcedBy: 'server-crypto:HMAC-SHA256',
       });
       return;

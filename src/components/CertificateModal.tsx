@@ -4,6 +4,7 @@ import { CAREER_TRACKS, CareerTrack, ISLANDS } from '../data/courseData';
 import { getHighestUnlockedBadge } from '../data/expertiseBadges';
 import { getExamMention } from './ExamBlancPanel';
 import { playClick, playSuccess } from '../utils/sound';
+import { sanitizeFilenameSlug, sanitizeXmlText } from '../utils/safeExport';
 
 interface CertificateModalProps {
   isOpen: boolean;
@@ -68,12 +69,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
     year: 'numeric',
   });
 
-  const safeXml = (str: string) =>
-    str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+  const safeXml = (str: string) => sanitizeXmlText(str);
 
   const handleDownloadSvg = () => {
     playSuccess();
@@ -128,9 +124,10 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `diplome-cyberland-${trackId}-${(learnerName || 'architecte')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')}.svg`;
+    a.download = `diplome-cyberland-${sanitizeFilenameSlug(trackId, 'all')}-${sanitizeFilenameSlug(
+      learnerName || 'architecte',
+      'architecte'
+    )}.svg`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

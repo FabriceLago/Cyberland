@@ -341,6 +341,10 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
     [30, 13],
     [12, 31],
     [31, 9],
+    [16, 32],
+    [32, 14],
+    [13, 33],
+    [33, 19],
   ];
 
   const perfectStarsCount = Object.values(starsByIsland).filter((s) => s === 3).length;
@@ -1509,6 +1513,10 @@ export const ArchipelagoView: React.FC<ArchipelagoViewProps> = ({
                         ? Server
                         : island.id === 31
                         ? FolderTree
+                        : island.id === 32
+                        ? ShieldCheck
+                        : island.id === 33
+                        ? Radar
                         : Lock;
 
                     return (

@@ -138,9 +138,9 @@ export const ANALYST_LEARNING_PHASES: AnalystLearningPhase[] = [
     id: 'phase-5-investigation-soc',
     phaseNumber: 5,
     title: 'Palier 5 · Investigation, Journaux & Réponse SOC',
-    subtitle: 'Passer en conditions opérationnelles : capturer, corréler, trier et contenir',
-    analystGoal: 'Disséquer des captures .pcap, interroger les logs KQL et exécuter des playbooks SIEM/SOAR.',
-    islandIds: [13, 14, 16],
+    subtitle: 'Passer en conditions opérationnelles : capturer, détecter, corréler et contenir',
+    analystGoal: 'Disséquer des captures .pcap, écrire des signatures Suricata IDS/IPS, interroger KQL et piloter Microsoft Sentinel (SIEM/SOAR).',
+    islandIds: [13, 33, 14, 16, 32],
   },
   {
     id: 'phase-6-expert-specialization',
@@ -160,10 +160,10 @@ export const ANALYST_FULL_ORDER: number[] = ANALYST_LEARNING_PHASES.flatMap(
 export const CAREER_TRACKS: CareerTrack[] = [
   {
     id: 'all',
-    label: 'Cursus Complet Analyste (31 cours)',
+    label: 'Cursus Complet Analyste (33 cours)',
     certificateTitle: 'Analyste Senior Réseaux, Systèmes, Cloud & Cybersécurité',
     description:
-      'Ordre recommandé en 6 paliers : fondations réseau, systèmes Linux/Windows Server/Active Directory, crypto/API, Cloud/K8s, investigation SOC et spécialisations expertes.',
+      'Ordre recommandé en 6 paliers : fondations réseau, systèmes Linux/Windows Server/Active Directory, crypto/API, Cloud/K8s, investigation SOC (Suricata & Microsoft Sentinel) et spécialisations expertes.',
     islandIds: ANALYST_FULL_ORDER,
   },
   {
@@ -171,24 +171,24 @@ export const CAREER_TRACKS: CareerTrack[] = [
     label: 'Analyste SOC & Cybersécurité',
     certificateTitle: 'Analyste Cybersécurité, Threat Hunting & DFIR',
     description:
-      'Progression ciblée analyste SOC : protocoles, VLAN/VPN, Linux, Windows Server & Active Directory avancé, crypto & API, Wireshark/KQL/SIEM, puis DMARC, Sigma/YARA et DFIR.',
-    islandIds: [1, 8, 2, 3, 20, 18, 19, 29, 30, 15, 31, 11, 10, 22, 13, 14, 16, 23, 24, 25],
+      'Progression ciblée analyste SOC : protocoles, VLAN/VPN, Linux, Windows Server & Active Directory avancé, crypto & API, Wireshark, Suricata IDS/IPS, KQL, Microsoft Sentinel (SIEM/SOAR), puis DMARC, Sigma/YARA et DFIR.',
+    islandIds: [1, 8, 2, 3, 20, 18, 19, 29, 30, 15, 31, 11, 10, 22, 13, 33, 14, 16, 32, 23, 24, 25],
   },
   {
     id: 'network',
     label: 'Analyste & Ingénieur Réseau',
     certificateTitle: 'Spécialiste Analyse & Infrastructures Réseau Avancées',
     description:
-      'Signaux, topologies, OSI, IP/DNS, IPv6, TCP/UDP, VLAN/WPA3, VPN/NAT, pare-feu DMZ, Wireshark, DNS Messagerie (SPF/DKIM/DMARC) et Routage OSPF/BGP/RPKI/SD-WAN.',
-    islandIds: [1, 7, 8, 2, 21, 3, 20, 18, 19, 13, 23, 28],
+      'Signaux, topologies, OSI, IP/DNS, IPv6, TCP/UDP, VLAN/WPA3, VPN/NAT, pare-feu DMZ, Wireshark, Suricata IDS/IPS, DNS Messagerie (SPF/DKIM/DMARC) et Routage OSPF/BGP/RPKI/SD-WAN.',
+    islandIds: [1, 7, 8, 2, 21, 3, 20, 18, 19, 13, 33, 23, 28],
   },
   {
     id: 'cloud-win',
     label: 'Analyste Cloud & Systèmes',
     certificateTitle: 'Administrateur & Analyste Systèmes, Cloud & DevSecOps',
     description:
-      'Linux complet, Windows Server, Active Directory (AD DS/GPO/Tiering), API/JWT, Cloud, Docker, Kubernetes, CI/CD, Azure Monitor, Terraform/Ansible et IAM Cloud/Vault.',
-    islandIds: [19, 29, 30, 15, 31, 22, 4, 9, 17, 12, 5, 6, 14, 26, 27],
+      'Linux complet, Windows Server, Active Directory (AD DS/GPO/Tiering), API/JWT, Cloud, Docker, Kubernetes, CI/CD, Azure Monitor, Microsoft Sentinel, Terraform/Ansible et IAM Cloud/Vault.',
+    islandIds: [19, 29, 30, 15, 31, 22, 4, 9, 17, 12, 5, 6, 14, 32, 26, 27],
   },
 ];
 
@@ -247,6 +247,8 @@ export const SHORT_COURSE_NAMES: Record<number, string> = {
   29: 'Administration Linux',
   30: 'Windows Server',
   31: 'Active Directory Complet',
+  32: 'Microsoft Sentinel',
+  33: 'Suricata IDS/IPS',
 };
 
 export function getCourseName(islandOrId: IslandModule | number): string {
@@ -1579,6 +1581,102 @@ export const ISLANDS: IslandModule[] = [
     ],
     mapPosition: { x: 89, y: 31 },
   },
+  {
+    id: 32,
+    slug: 'microsoft-sentinel-siem-soar',
+    title: '32. Microsoft Sentinel (SIEM/SOAR Cloud, KQL, Règles & Playbooks)',
+    subtitle: 'Data Connectors AMA/DCR, règles analytiques KQL, Watchlists, Entity Mapping et Playbooks SOAR Logic Apps',
+    category: 'SOC & SIEM Cloud',
+    duration: '45 min',
+    xpReward: 185,
+    badgeTitle: 'Architecte Microsoft Sentinel',
+    badgeDescription: 'Déploie les Data Connectors, rédige des règles KQL corrélées et automatise la réponse SOAR via Logic Apps.',
+    videoTitle: 'Cours complet Microsoft Sentinel : Ingestion DCR, KQL, Entity Mapping & SOAR',
+    videoDuration: '6 étapes + Lab Live',
+    gameTitle: 'Lab Microsoft Sentinel Live (SIEM/KQL)',
+    notions: [
+      'Workspace Log Analytics, Data Connectors & AMA/DCR',
+      'Requêtes KQL de détection & jointures Watchlists',
+      'Scheduled Analytic Rules, Entity Mapping & MITRE ATT&CK',
+      'UEBA, Threat Intelligence & réduction des faux positifs',
+      'Automation Rules & Playbooks SOAR (Azure Logic Apps)',
+      'Investigation d’incidents, Graphe d’Entités & Workbooks',
+    ],
+    summary:
+      'Maîtrisez le SIEM/SOAR Cloud-native de Microsoft de bout en bout : connectez Entra ID, Defender et Syslog/CEF, écrivez des règles analytiques KQL sans faux positifs, mappez vos entités et automatisez le confinement avec des Playbooks Logic Apps.',
+    keyTakeaways: [
+      {
+        term: 'Ingestion AMA / DCR & Tiers de tables',
+        detail: 'Connectez Entra ID, Defender et Syslog/CEF via Azure Monitor Agent (DCR) et basculez les logs verbeux (pare-feu) en table Basic Logs pour maîtriser la facture SIEM.',
+      },
+      {
+        term: 'Règles KQL & Entity Mapping',
+        detail: 'Une règle planifiée (Scheduled Rule) doit mapper Account, IP et Host pour permettre à Sentinel de fusionner les alertes liées dans un seul incident corrélé.',
+      },
+      {
+        term: 'Watchlists & UEBA',
+        detail: 'Utilisez _GetWatchlist() pour exclure les passerelles NAT légitimes ou prioriser les comptes VIP, et combinez avec le scoring comportemental UEBA.',
+      },
+      {
+        term: 'Automation Rules & Playbooks Logic Apps',
+        detail: 'Les Automation Rules trient et assignent les incidents, puis déclenchent des Playbooks Logic Apps (révocation de session Entra ID, blocage IP, alerte Teams).',
+      },
+    ],
+    gemiBotHints: [
+      'Dans Sentinel, filtrez toujours TimeGenerated en premier dans vos requêtes KQL pour accélérer l’exécution et éviter les timeouts.',
+      'Sans Entity Mapping (Account, IP, Host), Sentinel ne peut pas construire le graphe d’investigation ni relier automatiquement deux alertes du même attaquant.',
+      'Commencez par tester une nouvelle règle KQL en simulation sur 7 jours avant d’activer un Playbook de blocage automatique en production.',
+    ],
+    mapPosition: { x: 70, y: 58 },
+  },
+  {
+    id: 33,
+    slug: 'suricata-ids-ips-reseau',
+    title: '33. Suricata (IDS/IPS Réseau, Signatures SID, EVE JSON & Mode Inline)',
+    subtitle: 'Configuration suricata.yaml, signatures sticky buffers & PCRE, blocage inline AF_PACKET et investigation eve.json',
+    category: 'Détection Réseau & SOC',
+    duration: '45 min',
+    xpReward: 185,
+    badgeTitle: 'Ingénieur Détection Suricata',
+    badgeDescription: 'Configure suricata.yaml en mode IPS inline, rédige des signatures précises (sticky buffers/PCRE) et investigue eve.json.',
+    videoTitle: 'Cours complet Suricata : IDS/IPS, suricata.yaml, Règles SID & EVE JSON',
+    videoDuration: '6 étapes + Lab Live',
+    gameTitle: 'Lab Suricata Live (IDS/IPS & EVE JSON)',
+    notions: [
+      'Architecture IDS passif vs IPS inline (AF_PACKET / NFQUEUE)',
+      'Configuration suricata.yaml (HOME_NET, workers, eve-log)',
+      'Anatomie des règles : alert/drop, sticky buffers & fast-pattern',
+      'PCRE, flowbits multi-paquets & seuils anti-flooding',
+      'Cycle de vie suricata-update, validation -T & reload à chaud',
+      'Investigation eve.json (jq, pivot flow_id) & envoi vers SIEM',
+    ],
+    summary:
+      'Déployez et pilotez la sonde IDS/IPS open-source de référence : configurez suricata.yaml, rédigez des signatures applicatives (HTTP, DNS, TLS) rapides et sans faux positifs, bloquez en mode inline et pivotez dans les journaux structurés eve.json.',
+    keyTakeaways: [
+      {
+        term: 'HOME_NET & Mode IDS vs IPS Inline',
+        detail: 'Déclarez toujours précisément HOME_NET (RFC 1918) et EXTERNAL_NET: "!$HOME_NET" ; observez en mode alert (IDS) avant de basculer les signatures fiables en drop (IPS).',
+      },
+      {
+        term: 'Sticky Buffers & Fast-Pattern',
+        detail: 'Ciblez des buffers normalisés (http.uri, http.user_agent, dns.query, tls.sni) avec un mot-clé content fixe avant d’appliquer une regex PCRE coûteuse en CPU.',
+      },
+      {
+        term: 'Flowbits & Validation suricata -T',
+        detail: 'Reliez plusieurs paquets d’une même session avec flowbits:set/isset et validez systématiquement vos règles avec suricata -T avant tout rechargement à chaud.',
+      },
+      {
+        term: 'Journaux structurés eve.json & Pivot flow_id',
+        detail: 'Un seul flow_id permet de reconstituer en quelques secondes la requête DNS, le handshake TLS, la charge HTTP et l’alerte Suricata associée via jq ou un SIEM.',
+      },
+    ],
+    gemiBotHints: [
+      'Une règle utilisant uniquement pcre sans mot-clé content force le moteur à inspecter chaque paquet : ajoutez toujours un content discriminant en fast-pattern.',
+      'Dans local.rules, attribuez des identifiants sid >= 1000000 (et incrémentez rev à chaque modification) pour ne jamais entrer en collision avec Emerging Threats.',
+      'Surveillez capture.kernel_drops dans stats.log : si le compteur grimpe, optimisez le pinning CPU workers et excluez les flux de sauvegarde massifs (pass/BPF).',
+    ],
+    mapPosition: { x: 24, y: 64 },
+  },
 ];
 
 export interface GlossaryTerm {
@@ -2030,6 +2128,38 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     category: 'Systèmes & Sécurité',
     definition: 'Jeton signé en 3 parties (Header.Payload.Signature) ; IDOR/BOLA survient lorsqu’une API ne vérifie pas que la ressource demandée appartient bien à jwt.sub.',
     example: 'Rejeter GET /api/invoices/43 par l’utilisateur #42 avec un code HTTP 403 Forbidden.',
+  },
+  {
+    id: 'microsoft-sentinel-siem',
+    term: 'Microsoft Sentinel (SIEM / SOAR)',
+    islandId: 32,
+    category: 'SOC & SIEM Cloud',
+    definition: 'Plateforme SIEM et SOAR Cloud-native de Microsoft adossée à Log Analytics, combinant règles analytiques KQL, Entity Mapping, Watchlists, UEBA et Playbooks Logic Apps.',
+    example: 'Corréler 15 échecs Entra ID (SigninLogs) par compte VIP puis déclencher un Playbook Logic App révoquant la session.',
+  },
+  {
+    id: 'sentinel-watchlist-playbook',
+    term: 'Watchlist & Playbook Logic App',
+    islandId: 32,
+    category: 'SOC & SIEM Cloud',
+    definition: 'Une Watchlist stocke des listes de référence (IP NAT fiables, comptes VIP) interrogées via _GetWatchlist() en KQL ; un Playbook Logic App automatise la réponse SOAR sur incident.',
+    example: 'Exclure la passerelle VPN d’entreprise via _GetWatchlist("TrustedNAT_IPs") et bloquer automatiquement les IP attaquantes.',
+  },
+  {
+    id: 'suricata-ids-ips',
+    term: 'Suricata (IDS / IPS Réseau)',
+    islandId: 33,
+    category: 'Détection Réseau & SOC',
+    definition: 'Moteur open-source multi-thread d’inspection réseau profonde (DPI) capable d’alerter en écoute passive (IDS) ou de bloquer les paquets malveillants en coupure inline (IPS).',
+    example: 'Bloquer instantanément une injection SQL HTTP grâce à une règle drop http ciblant http.uri et http.user_agent.',
+  },
+  {
+    id: 'suricata-eve-json',
+    term: 'EVE JSON & Sticky Buffers (Suricata)',
+    islandId: 33,
+    category: 'Détection Réseau & SOC',
+    definition: 'eve.json est le journal JSON unifié de Suricata (alertes, DNS, HTTP, TLS, flows reliés par flow_id) ; les sticky buffers ciblent un champ protocolaire précis pour accélérer la détection.',
+    example: 'jq \'select(.event_type=="alert") | {flow_id, src_ip, sig:.alert.signature}\' /var/log/suricata/eve.json',
   },
 ];
 

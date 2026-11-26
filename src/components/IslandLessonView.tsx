@@ -140,6 +140,10 @@ export const IslandLessonView: React.FC<IslandLessonViewProps> = ({
       ? ASSETS.azureMonitorTowerCover
       : island.id === 31
       ? ASSETS.adCitadelCover
+      : island.id === 32
+      ? ASSETS.socCenterCover
+      : island.id === 33
+      ? ASSETS.wiresharkObservatoryCover
       : island.id >= 4
       ? ASSETS.cloudSummitCover
       : null;

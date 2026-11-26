@@ -169,7 +169,7 @@ const ESSENTIAL_TOUR_STEPS: LearningTourStep[] = [
     description:
       'Personnalisez votre prénom, choisissez votre rythme quotidien et cliquez sur le bouton principal pour reprendre exactement l’étape en cours du parcours.',
     interactiveTip:
-      'Le sélecteur tout en haut vous permet à tout moment de basculer vers le Catalogue Complet (31 cours et tous les labos).',
+      'Le sélecteur tout en haut vous permet à tout moment de basculer vers le Catalogue Complet (33 cours et tous les labos).',
     preferredPlacement: 'bottom',
     quickAction: {
       label: 'Ouvrir mon prochain cours',

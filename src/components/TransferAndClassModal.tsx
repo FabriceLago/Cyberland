@@ -15,6 +15,7 @@ import {
 import { ISLANDS } from '../data/courseData';
 import { auth } from '../firebase';
 import { callSecureApi } from '../utils/secureApi';
+import { sanitizeCsvCell } from '../utils/safeExport';
 import { playClick, playError, playSuccess } from '../utils/sound';
 
 export interface TransferPayload {
@@ -213,7 +214,7 @@ export const TransferAndClassModal: React.FC<TransferAndClassModalProps> = ({
     const header = `Eleve,Iles validees (/${ISLANDS.length}),Etoiles,Tickets Debug,XP Total`;
     const rows = roster.map((s) => {
       const stars = Object.values(s.starsByIsland).reduce((a, b) => a + b, 0);
-      return `"${s.name.replace(/"/g, '""')}",${s.completedIslands.length},${stars},${
+      return `${sanitizeCsvCell(s.name)},${s.completedIslands.length},${stars},${
         s.solvedDebugIds.length
       },${computeXp(s)}`;
     });

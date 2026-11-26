@@ -7,7 +7,9 @@ export type AdvancedLabId =
   | 'bgprouting'
   | 'linuxadmin'
   | 'winserver'
-  | 'admastery';
+  | 'admastery'
+  | 'sentinel'
+  | 'suricata';
 
 export interface CourseStepBlock {
   stepTitle: string;
@@ -1157,6 +1159,349 @@ dcdiag /q`,
         col1: 'Tier 2 (Postes)',
         col2: 'PC portables, postes bureautiques, imprimantes',
         col3: 'Windows LAPS obligatoire (mot de passe local unique), utilisateurs sans droits admin',
+      },
+    ],
+  },
+  32: {
+    islandId: 32,
+    labId: 'sentinel',
+    priorityRank: 10,
+    kicker: 'SOC & SIEM Cloud · Détection KQL, Corrélation & Réponse SOAR',
+    heading: 'Microsoft Sentinel : Collecte DCR, Règles KQL, Watchlists & Playbooks SOAR',
+    intro:
+      'Microsoft Sentinel est le SIEM/SOAR Cloud-native déployé dans la majorité des SOC d’entreprise hybrides (Microsoft 365, Azure, Linux, pare-feu). Apprenez à connecter vos sources via DCR/AMA, écrire des règles analytiques KQL précises avec Entity Mapping, réduire le bruit grâce aux Watchlists/UEBA et automatiser le confinement avec Azure Logic Apps.',
+    labButtonLabel: 'Ouvrir le Lab Microsoft Sentinel Live (SIEM/KQL)',
+    steps: [
+      {
+        stepTitle: 'ÉTAPE 1 · Architecture Log Analytics, Data Connectors & Optimisation des coûts',
+        explanation:
+          'Sentinel s’appuie sur un espace de travail Log Analytics. Connectez les journaux d’identité (Entra ID), d’endpoints (Defender XDR) et de serveurs Linux/pare-feu via Azure Monitor Agent (AMA) et des Data Collection Rules (DCR). Classez les tables haute volumétrie (pare-feu, NetFlow) en Basic Logs pour diviser la facture par 4 tout en gardant les détections critiques en table Analytics.',
+        code: `# Déployer Sentinel sur un workspace Log Analytics (Azure CLI)
+az sentinel onboarding-state create \\
+  --resource-group rg-soc-cyberland \\
+  --workspace-name law-sentinel-prod \\
+  --name default
+
+# Vérifier les connecteurs actifs & les tables ingérées
+az monitor log-analytics workspace table list \\
+  --resource-group rg-soc-cyberland \\
+  --workspace-name law-sentinel-prod \\
+  --query "[].{Table:name, Plan:plan, Retention:retentionInDays}" -o table
+
+# Exemple de flux ingérés :
+# - SigninLogs / AuditLogs (Microsoft Entra ID) -> Plan: Analytics
+# - DeviceProcessEvents (Defender XDR)          -> Plan: Analytics
+# - CommonSecurityLog (CEF Firewall / Suricata) -> Plan: Basic ou Analytics`,
+        accent: 'sky',
+      },
+      {
+        stepTitle: 'ÉTAPE 2 · Maîtriser KQL pour la détection & la corrélation SOC',
+        explanation:
+          'Le langage KQL (Kusto Query Language) fonctionne par pipelines (|). Placez toujours le filtre temporel (TimeGenerated) et les filtres égalitaires en haut de la requête pour optimiser le coût CPU. Utilisez summarize + bin() pour agréger des rafales de tentatives et make_set() pour lister les adresses IP ou comptes ciblés.',
+        code: `// Détection de Password Spraying sur Microsoft Entra ID (KQL)
+let Lookback = 15m;
+let FailureThreshold = 10;
+SigninLogs
+| where TimeGenerated >= ago(Lookback)
+| where ResultType in ("50126", "50053", "50057") // Mauvais MDP / Verrouillé
+| summarize
+    FailedAttempts = count(),
+    TargetedUsers = dcount(UserPrincipalName),
+    UserList = make_set(UserPrincipalName, 20),
+    Apps = make_set(AppDisplayName, 10)
+    by IPAddress, bin(TimeGenerated, 15m)
+| where TargetedUsers >= 5 or FailedAttempts >= FailureThreshold
+| sort by FailedAttempts desc`,
+        accent: 'cyan',
+      },
+      {
+        stepTitle: 'ÉTAPE 3 · Règles analytiques planifiées (Scheduled Rules) & Entity Mapping',
+        explanation:
+          'Une Scheduled Analytic Rule exécute votre KQL à intervalle fixe (ex. toutes les 5 minutes sur une fenêtre de 15 minutes). Déclarez impérativement l’Entity Mapping (Account, IP, Host) et les tactiques MITRE ATT&CK : Sentinel peut ainsi fusionner automatiquement plusieurs alertes partageant la même IP ou le même utilisateur au sein d’un seul Incident corrélé.',
+        code: `// Règle planifiée : Connexion réussie après rafale d'échecs (Compromission probable)
+let FailedIPs = SigninLogs
+| where TimeGenerated >= ago(30m)
+| where ResultType != "0"
+| summarize Fails = count() by IPAddress
+| where Fails >= 10;
+SigninLogs
+| where TimeGenerated >= ago(15m)
+| where ResultType == "0"
+| join kind=inner FailedIPs on IPAddress
+| project TimeGenerated, UserPrincipalName, IPAddress, Location, AppDisplayName, Fails
+
+// Entity Mapping dans le portail Sentinel :
+// Account -> FullName : UserPrincipalName
+// IP      -> Address  : IPAddress
+// MITRE   -> Initial Access (T1078) + Credential Access (T1110.003)`,
+        accent: 'emerald',
+      },
+      {
+        stepTitle: 'ÉTAPE 4 · Watchlists, Threat Intelligence & Scoring UEBA',
+        explanation:
+          'Pour éliminer les faux positifs sans modifier la logique de détection chaque semaine, stockez vos IP NAT de confiance, comptes de service et utilisateurs VIP dans des Watchlists Sentinel. Appelez-les dynamiquement via _GetWatchlist() et enrichissez vos alertes avec la table ThreatIntelligenceIndicator et les anomalies UEBA (BehaviorAnalytics).',
+        code: `// Filtrer les IP NAT légitimes et prioriser les comptes VIP via Watchlists
+let TrustedNAT = _GetWatchlist('TrustedNAT_IPs') | project SearchKey;
+let VIPUsers   = _GetWatchlist('VIP_Accounts')   | project UserPrincipalName = SearchKey;
+SigninLogs
+| where TimeGenerated >= ago(1h)
+| where IPAddress !in (TrustedNAT)
+| join kind=leftouter VIPUsers on UserPrincipalName
+| extend IsVIP = isnotempty(UserPrincipalName1)
+| join kind=leftouter (
+    ThreatIntelligenceIndicator
+    | where Active == true and ExpirationDateTime > now()
+    | project NetworkIP, ThreatType, ConfidenceScore
+) on $left.IPAddress == $right.NetworkIP
+| where IsVIP == true or ConfidenceScore >= 75`,
+        accent: 'amber',
+      },
+      {
+        stepTitle: 'ÉTAPE 5 · Automatisation SOAR : Automation Rules & Playbooks Logic Apps',
+        explanation:
+          'Dans Microsoft Sentinel, une Automation Rule agit comme le routeur immédiat (triage, tags, assignation, fermeture des faux positifs connus) et déclenche des Playbooks Azure Logic Apps pour les actions complexes : enrichir l’IP, notifier le canal SOC, révoquer les jetons de session Entra ID et bloquer l’IP sur le pare-feu ou Conditional Access.',
+        code: `// Workflow Playbook Logic App (SOAR) déclenché sur incident Haute Sévérité :
+1. Trigger  : Microsoft Sentinel Incident (When Sentinel incident creation rule was triggered)
+2. Action 1 : Entities - Get Accounts & Get IPs
+3. Action 2 : HTTP POST Microsoft Graph -> /users/{id}/revokeSignInSessions
+4. Action 3 : Azure Firewall / Named Location -> Add IP to Blocked_IOC_List
+5. Action 4 : Microsoft Teams -> Post Adaptive Card (Approuver confinement / Escalader)
+6. Action 5 : Sentinel -> Add comment to incident ("Session révoquée + IP bloquée en 14s")
+
+# Bonne pratique sécurité : utiliser une Managed Identity (RBAC moindre privilège)
+# pour le Playbook Logic App plutôt qu'un secret applicatif statique.`,
+        accent: 'violet',
+      },
+      {
+        stepTitle: 'ÉTAPE 6 · Investigation d’Incident, Graphe d’Entités & Tuning Continu',
+        explanation:
+          'Lors d’une alerte, ouvrez le Graphe d’Investigation pour visualiser les liens entre Utilisateur, Adresse IP, Poste et Alertes connexes (Defender, Suricata, Entra ID). Documentez vos requêtes d’investigation avec des Hunting Bookmarks, mesurez vos indicateurs MTTD/MTTR dans des Workbooks et clôturez toujours l’incident avec une classification précise (TruePositive / BenignPositive / FalsePositive).',
+        code: `// Requête de pivot d'investigation sur un utilisateur suspect (24h)
+let SuspectUser = "claire.dupont@cyberland.fr";
+union isfuzzy=true SigninLogs, AuditLogs, OfficeActivity
+| where TimeGenerated >= ago(24h)
+| where UserPrincipalName =~ SuspectUser or UserId =~ SuspectUser
+| project TimeGenerated, Type, OperationName, IPAddress, ResultType
+| sort by TimeGenerated asc
+
+// Indicateur SOC : Taux de vrais positifs par règle analytique (30 jours)
+SecurityIncident
+| where TimeGenerated >= ago(30d) and Status == "Closed"
+| summarize Total=count(), TP=countif(Classification=="TruePositive"),
+            FP=countif(Classification=="FalsePositive") by Title
+| extend PrecisionPct = round(100.0 * TP / Total, 1)`,
+        accent: 'emerald',
+      },
+    ],
+    troubleshootingTitle: 'Diagnostics Microsoft Sentinel & erreurs SOC fréquentes',
+    troubleshooting: [
+      {
+        symptom: 'Explosion inattendue de la facture mensuelle Log Analytics / Sentinel',
+        fix: 'Vérifiez la table Usage en KQL (Usage | summarize GB=sum(Quantity)/1024 by DataType) : des logs pare-feu/DNS verbeux sont souvent ingérés en plan Analytics au lieu de Basic Logs ou sans filtrage DCR.',
+      },
+      {
+        symptom: 'Les alertes se créent mais ne se regroupent pas dans un même Incident',
+        fix: 'Vérifiez que l’Entity Mapping (Account, IP, Host) est bien configuré dans la règle analytique et que le regroupement d’alertes par entités correspondantes est activé.',
+      },
+      {
+        symptom: 'Le Playbook Logic App échoue avec une erreur HTTP 403 Forbidden',
+        fix: 'La Managed Identity du Playbook manque d’un rôle RBAC (Microsoft Sentinel Responder) ou d’une permission Microsoft Graph (User.RevokeSessions.All).',
+      },
+    ],
+    tableTitle: 'Composants clés de l’architecture Microsoft Sentinel (SIEM + SOAR)',
+    tableHeaders: ['Composant Sentinel', 'Rôle opérationnel SOC', 'Bonne pratique production'],
+    tableRows: [
+      {
+        col1: 'Data Connectors + DCR',
+        col2: 'Collecter logs Entra ID, Defender, Azure, Linux & CEF',
+        col3: 'Filtrer le bruit dans la DCR et utiliser Basic Logs pour les flux massifs',
+      },
+      {
+        col1: 'Scheduled Analytic Rule',
+        col2: 'Exécuter une requête KQL périodique et lever des alertes',
+        col3: 'Entity Mapping complet + tactiques MITRE + exclusions Watchlist',
+      },
+      {
+        col1: 'Automation Rule + Playbook',
+        col2: 'Trier, enrichir et contenir automatiquement l’incident',
+        col3: 'Managed Identity dédiée + validation humaine avant actions destructives',
+      },
+    ],
+  },
+  33: {
+    islandId: 33,
+    labId: 'suricata',
+    priorityRank: 11,
+    kicker: 'Détection Réseau & SOC · IDS/IPS, Règles SID & Journaux EVE JSON',
+    heading: 'Suricata : Déploiement IDS/IPS Inline, Écriture de Règles & Investigation EVE JSON',
+    intro:
+      'Suricata est le moteur IDS/IPS open-source multi-thread de référence pour inspecter le trafic réseau en profondeur (HTTP, DNS, TLS, SMB, SSH). Apprenez à configurer suricata.yaml, rédiger des signatures performantes avec sticky buffers et PCRE, passer proprement en blocage inline (IPS) et corréler vos alertes via eve.json.',
+    labButtonLabel: 'Ouvrir le Lab Suricata Live (IDS/IPS & EVE JSON)',
+    steps: [
+      {
+        stepTitle: 'ÉTAPE 1 · Architecture IDS vs IPS & Configuration suricata.yaml',
+        explanation:
+          'En mode IDS (passif sur port SPAN/TAP), Suricata observe une copie du trafic et génère des alertes sans risque de coupure réseau. En mode IPS (inline via AF_PACKET bridge ou NFQUEUE), Suricata traverse le flux et peut bloquer (drop) instantanément les paquets malveillants. Définissez toujours HOME_NET avec vos préfixes internes exacts.',
+        code: `# /etc/suricata/suricata.yaml (extrait essentiel)
+vars:
+  address-groups:
+    HOME_NET: "[10.10.0.0/16,192.168.10.0/24]"
+    EXTERNAL_NET: "!$HOME_NET"
+    HTTP_SERVERS: "$HOME_NET"
+  port-groups:
+    HTTP_PORTS: "80,443,8080"
+
+af-packet:
+  - interface: eth0
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
+    copy-mode: ips       # Actif uniquement en mode IPS inline
+    copy-iface: eth1     # Interface de sortie pontée
+
+outputs:
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      types: [alert, http, dns, tls, flow, stats]`,
+        accent: 'sky',
+      },
+      {
+        stepTitle: 'ÉTAPE 2 · Anatomie d’une règle Suricata & Sticky Buffers applicatifs',
+        explanation:
+          'Une règle comporte un en-tête (Action, Protocole, IP/Port source, Direction, IP/Port destination) suivi d’options entre parenthèses. Préférez les protocoles applicatifs (http, dns, tls) et les sticky buffers (http.uri, http.user_agent, dns.query) qui inspectent des champs décodés par les parseurs Suricata et réduisent fortement les faux positifs.',
+        code: `# Syntaxe : <action> <proto> <src_ip> <src_port> -> <dst_ip> <dst_port> (<options>)
+# Détection d'un scan sqlmap ciblant l'API d'export (mode IPS : drop)
+drop http $EXTERNAL_NET any -> $HOME_NET any (\\
+    msg:"CYBERLAND WEB-ATTACK Tentative SQLi via sqlmap sur /api/v1/export"; \\
+    flow:established,to_server; \\
+    http.method; content:"GET"; \\
+    http.uri; content:"/api/v1/export"; fast_pattern; \\
+    http.user_agent; content:"sqlmap"; nocase; \\
+    classtype:web-application-attack; \\
+    sid:1000042; rev:1;)
+
+# Convention SID :
+# 1000000 - 1999999 : réservés aux règles personnalisées (local.rules)`,
+        accent: 'cyan',
+      },
+      {
+        stepTitle: 'ÉTAPE 3 · Signatures avancées : PCRE, Flowbits & Seuils anti-flood',
+        explanation:
+          'Le moteur regex PCRE est puissant mais coûteux : combinez-le toujours avec un mot-clé content préalable qui agit comme pré-filtre rapide. Pour détecter une attaque en plusieurs étapes (ex. requête suspecte suivie d’un téléchargement exécutable), utilisez flowbits:set et flowbits:isset. Ajoutez threshold pour éviter de saturer le SIEM en cas de scan massif.',
+        code: `# 1. Combiner content (rapide) + PCRE (précis) sur une injection SQL
+drop http $EXTERNAL_NET any -> $HOME_NET any (\\
+    msg:"CYBERLAND SQLi UNION SELECT dans URI"; \\
+    flow:established,to_server; \\
+    http.uri; content:"/api/"; fast_pattern; \\
+    pcre:"/(union\\s+select|or\\s+1=1|sleep\\(\\d+\\))/i"; \\
+    threshold: type limit, track by_src, count 1, seconds 60; \\
+    sid:1000043; rev:1;)
+
+# 2. Corrélation multi-paquets via flowbits (Phase 1 silencieuse -> Phase 2 alerte)
+alert http $HOME_NET any -> $EXTERNAL_NET any (\\
+    msg:"Phase 1 - Téléchargement stage suspect"; flow:established,to_server; \\
+    http.uri; content:"/stage.bin"; flowbits:set,cyberland.stage_dl; flowbits:noalert; \\
+    sid:1000044; rev:1;)
+alert http $EXTERNAL_NET any -> $HOME_NET any (\\
+    msg:"Phase 2 - Réponse PE MZ après téléchargement stage"; flow:established,to_client; \\
+    flowbits:isset,cyberland.stage_dl; file.magic; content:"PE32"; \\
+    sid:1000045; rev:1;)`,
+        accent: 'emerald',
+      },
+      {
+        stepTitle: 'ÉTAPE 4 · Gestion des signatures avec suricata-update & Validation -T',
+        explanation:
+          'En production, vous combinez des sources communautaires (Emerging Threats Open) avec votre fichier local.rules. Pilotez le tri avec disable.conf (règles trop bruyantes) et modify.conf (conversion ciblée d’alert vers drop), validez impérativement avec suricata -T puis rechargez sans couper le trafic via suricatasc.',
+        code: `# Mettre à jour les signatures Emerging Threats Open
+sudo suricata-update enable-source et/open
+sudo suricata-update
+
+# Exemple /etc/suricata/modify.conf : passer une règle fiable en mode IPS drop
+# re:^alert(.*sid:2024897;) "drop$1"
+
+# Valider la configuration & toutes les règles SANS redémarrer la sonde
+sudo suricata -T -c /etc/suricata/suricata.yaml -v
+
+# Rechargement à chaud des règles (zéro perte de paquets)
+sudo suricatasc -c reload-rules`,
+        accent: 'amber',
+      },
+      {
+        stepTitle: 'ÉTAPE 5 · Investigation dans eve.json (jq) & Envoi vers Microsoft Sentinel',
+        explanation:
+          'Chaque événement Suricata (alerte, requête HTTP, résolution DNS, certificat TLS, flux réseau) est journalisé en JSON structuré dans /var/log/suricata/eve.json et partage un identifiant unique flow_id. Utilisez jq en ligne de commande pour pivoter instantanément ou transférez eve.json vers votre SIEM (Sentinel / Elastic).',
+        code: `# 1. Lister les alertes bloquées ou détectées dans eve.json
+jq 'select(.event_type=="alert") | {
+  time: .timestamp,
+  flow: .flow_id,
+  src: .src_ip,
+  dst: .dest_ip,
+  action: .alert.action,
+  sig: .alert.signature
+}' /var/log/suricata/eve.json
+
+# 2. Pivoter sur un flow_id précis pour voir HTTP + DNS + TLS + Alerte associés
+jq 'select(.flow_id == 194827361029481)' /var/log/suricata/eve.json
+
+# 3. Extraire les domaines DNS les plus interrogés (repérer DGA / Beaconing)
+jq -r 'select(.event_type=="dns" and .dns.type=="query") | .dns.rrname' \\
+  /var/log/suricata/eve.json | sort | uniq -c | sort -nr | head -n 15`,
+        accent: 'violet',
+      },
+      {
+        stepTitle: 'ÉTAPE 6 · Tuning IPS Inline, Performance & Prévention des Faux Positifs',
+        explanation:
+          'Un IPS mal calibré peut bloquer une application métier critique. Appliquez une méthode progressive : déployez chaque nouvelle signature en alert pendant 7 jours, mesurez le taux de faux positifs, ajoutez des règles pass pour les flux de sauvegarde chiffrés à très haut débit et surveillez capture.kernel_drops dans stats.log.',
+        code: `# Vérifier s'il y a des pertes de paquets noyau (kernel_drops doit rester à 0)
+jq 'select(.event_type=="stats") | {
+  packets: .stats.capture.kernel_packets,
+  drops: .stats.capture.kernel_drops,
+  memcap_drop: .stats.tcp.ssn_memcap_drop
+}' /var/log/suricata/eve.json | tail -n 5
+
+# Exclure un flux de sauvegarde interne massif (éviter la saturation CPU)
+pass tcp 10.10.50.10 any -> 10.10.50.20 443 (\\
+    msg:"Bypass Backup SAN interne chiffré"; sid:1000001; rev:1;)
+
+# Tester une capture .pcap hors-ligne contre votre fichier local.rules
+suricata -r capture_incident.pcap -S /etc/suricata/rules/local.rules -l /tmp/suri_out/`,
+        accent: 'emerald',
+      },
+    ],
+    troubleshootingTitle: 'Diagnostics Suricata & erreurs terrain fréquentes',
+    troubleshooting: [
+      {
+        symptom: 'Aucune alerte ne se déclenche malgré un trafic d’attaque visible dans tcpdump',
+        fix: 'Vérifiez HOME_NET/EXTERNAL_NET dans suricata.yaml (une IP attaquante située dans HOME_NET ne correspond pas à $EXTERNAL_NET) et désactivez le NIC offloading (gro/lro/tso) via ethtool -K eth0 gro off lro off.',
+      },
+      {
+        symptom: 'Le compteur capture.kernel_drops augmente fortement sous charge',
+        fix: 'Passez en runmode workers avec af-packet cluster_flow, augmentez ring-size dans suricata.yaml, isolez les cœurs CPU (cpu-affinity) et ajoutez des règles pass/BPF sur les sauvegardes massives.',
+      },
+      {
+        symptom: 'Suricata bloque (drop) un trafic applicatif légitime en mode IPS',
+        fix: 'Identifiez le sid responsable dans eve.json, repassez la signature en alert dans modify.conf, affinez le sticky buffer (http.uri / http.host) ou ajoutez une exception ciblée par IP/hôte.',
+      },
+    ],
+    tableTitle: 'Comparatif déploiement Suricata : IDS Passif vs IPS Inline',
+    tableHeaders: ['Mode Suricata', 'Mécanisme réseau', 'Avantage & Risque opérationnel'],
+    tableRows: [
+      {
+        col1: 'IDS Passif (SPAN / TAP)',
+        col2: 'Écoute sur copie de trafic (action alert uniquement)',
+        col3: 'Zéro risque de coupure métier, mais ne bloque pas l’attaque en temps réel',
+      },
+      {
+        col1: 'IPS Inline (AF_PACKET)',
+        col2: 'Coupure pontée entre eth0 et eth1 (action drop / reject)',
+        col3: 'Bloque l’intrusion à la milliseconde ; exige tuning strict & bypass matériel',
+      },
+      {
+        col1: 'Analyse PCAP Hors-Ligne',
+        col2: 'suricata -r fichier.pcap -S local.rules',
+        col3: 'Idéal pour valider une nouvelle signature et chasser dans des captures DFIR',
       },
     ],
   },

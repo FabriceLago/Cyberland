@@ -503,9 +503,9 @@ export const EssentialPathSection: React.FC<EssentialPathSectionProps> = ({
             <span className="font-semibold text-slate-900 dark:text-slate-200">
               Prêt à élargir votre périmètre ?
             </span>{' '}
-            Les 25 cours d’approfondissement (Cloud, Kubernetes, Windows Server, Terraform, DFIR,
-            Sigma/YARA, BGP) et l’ensemble des laboratoires restent accessibles en un clic dans le
-            Catalogue Complet.
+            Les 27 cours d’approfondissement (Cloud, Kubernetes, Windows Server, Microsoft Sentinel,
+            Suricata IDS/IPS, Terraform, DFIR, Sigma/YARA, BGP) et l’ensemble des laboratoires
+            restent accessibles en un clic dans le Catalogue Complet.
           </p>
         </div>
         <button
@@ -517,7 +517,7 @@ export const EssentialPathSection: React.FC<EssentialPathSectionProps> = ({
           className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:border-sky-500 dark:hover:border-cyan-400 transition-colors whitespace-nowrap shrink-0 self-start sm:self-auto"
         >
           <FileSearch className="w-3.5 h-3.5 text-sky-700 dark:text-cyan-400 shrink-0" />
-          Ouvrir le Catalogue Complet (31 cours)
+          Ouvrir le Catalogue Complet (33 cours)
         </button>
       </div>
     </section>
